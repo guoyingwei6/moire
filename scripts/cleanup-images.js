@@ -20,13 +20,28 @@ if (imageFiles.length === 0) {
   process.exit(0);
 }
 
-// 2. Get all markdown files
-const memoFiles = fs.readdirSync(memosDir).filter(file => file.endsWith('.md'));
+// 2. Get all markdown files recursively
+const getMarkdownFiles = (dir) => {
+  let results = [];
+  const list = fs.readdirSync(dir);
+  list.forEach(file => {
+    file = path.join(dir, file);
+    const stat = fs.statSync(file);
+    if (stat && stat.isDirectory()) {
+      results = results.concat(getMarkdownFiles(file));
+    } else if (file.endsWith('.md')) {
+      results.push(file);
+    }
+  });
+  return results;
+};
+
+const memoFiles = getMarkdownFiles(memosDir);
 
 // 3. Scan all markdown files for image references
 let allContent = '';
 for (const file of memoFiles) {
-  allContent += fs.readFileSync(path.join(memosDir, file), 'utf-8');
+  allContent += fs.readFileSync(file, 'utf-8');
 }
 
 // 4. Identify unused images
