@@ -7,6 +7,7 @@ export type Memo = {
   content: string;
   date: Date;
   tags: string[];
+  category: string;
 };
 
 export async function getMemos(): Promise<Memo[]> {
@@ -16,6 +17,11 @@ export async function getMemos(): Promise<Memo[]> {
   const memos: Memo[] = await Promise.all(
     Object.entries(memoModules).map(async ([path, rawContent]) => {
       const slug = path.split('/').pop()?.replace('.md', '') || 'unknown';
+      const pathParts = path.split('/');
+      const memosIndex = pathParts.indexOf('memos');
+      const category = memosIndex >= 0 && pathParts.length > memosIndex + 2
+        ? pathParts[memosIndex + 1]
+        : 'uncategorized';
 
       let markdownString = rawContent as string;
 
@@ -124,7 +130,8 @@ export async function getMemos(): Promise<Memo[]> {
         slug,
         content: htmlContent,
         date,
-        tags
+        tags,
+        category
       };
     })
   );

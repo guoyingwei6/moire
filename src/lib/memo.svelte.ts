@@ -3,6 +3,16 @@ import { format } from 'date-fns';
 export function createMemoList(getData: () => any, config: any) {
     let visibleCount = $state(config.pageSize || 20);
     let selectedTag = $state<string | null>(null);
+    let selectedCategory = $state<string | null>(null);
+
+    // Derived: Get all unique categories
+    const allCategories = $derived.by(() => {
+        const cats = new Set<string>();
+        getData().memos.forEach((memo: any) => {
+            if (memo.category) cats.add(memo.category);
+        });
+        return Array.from(cats).sort();
+    });
 
     // Derived: Get all unique tags
     const allTags = $derived.by(() => {
@@ -13,11 +23,13 @@ export function createMemoList(getData: () => any, config: any) {
         return Array.from(tags).sort();
     });
 
-    // Derived: Filter memos by tag
+    // Derived: Filter memos by category and tag
     const filteredMemos = $derived(
-        selectedTag !== null
-            ? getData().memos.filter((memo: any) => memo.tags?.includes(selectedTag as string))
-            : getData().memos
+        getData().memos.filter((memo: any) => {
+            const matchCategory = selectedCategory === null || memo.category === selectedCategory;
+            const matchTag = selectedTag === null || memo.tags?.includes(selectedTag as string);
+            return matchCategory && matchTag;
+        })
     );
 
     // Derived: Slice the memos first
@@ -40,17 +52,26 @@ export function createMemoList(getData: () => any, config: any) {
 
     function selectTag(tag: string | null) {
         selectedTag = selectedTag === tag ? null : tag;
-      visibleCount = config.pageSize || 20;
+        visibleCount = config.pageSize || 20;
+    }
+
+    function selectCategory(cat: string | null) {
+        selectedCategory = selectedCategory === cat ? null : cat;
+        selectedTag = null;
+        visibleCount = config.pageSize || 20;
     }
 
     return {
         get visibleCount() { return visibleCount },
         get selectedTag() { return selectedTag },
+        get selectedCategory() { return selectedCategory },
+        get allCategories() { return allCategories },
         get allTags() { return allTags },
         get filteredMemos() { return filteredMemos },
         get visibleMemos() { return visibleMemos },
         get groupedMemos() { return groupedMemos },
         loadMore,
-        selectTag
+        selectTag,
+        selectCategory
     };
 }
