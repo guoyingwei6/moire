@@ -3,6 +3,7 @@
   import { format } from 'date-fns';
   import type { PageData } from '../../routes/$types';
   import { createMemoList } from '$lib/memo.svelte';
+  import Heatmap from '$lib/components/Heatmap.svelte';
 
   let { data, config }: { data: PageData; config: any } = $props();
   const memoList = createMemoList(() => data, config);
@@ -36,6 +37,12 @@
         </div>
       </div>
     </header>
+
+    {#if config.heatmap}
+      <div class="mb-8 pb-8 border-b border-gray-100">
+        <Heatmap memos={data.memos} />
+      </div>
+    {/if}
 
     <div class="divide-y divide-gray-100">
       {#each memoList.visibleMemos as memo (memo.slug)}

@@ -5,6 +5,7 @@
   import {createMemoList} from '$lib/memo.svelte';
   import type {PageData} from '../../routes/$types';
   import {marked} from 'marked';
+  import Heatmap from '$lib/components/Heatmap.svelte';
 
   let {data}: {data: PageData} = $props();
   const memoList = createMemoList(() => data, config);
@@ -50,6 +51,14 @@
       </div>
     {/if}
   </header>
+
+  {#if config.heatmap}
+    <div class="mb-10 px-4">
+      <div class="rounded-2xl md:rounded-[2rem] border border-white/50 bg-white/30 p-2 md:p-6 shadow-sm backdrop-blur-3xl backdrop-saturate-150 relative z-30 overflow-hidden">
+        <Heatmap memos={data.memos} />
+      </div>
+    </div>
+  {/if}
 
   <div class="mx-auto grid grid-cols-1 gap-6 px-4 2xl:grid-cols-2" data-selected-tag={memoList.selectedTag}>
     {#each memoList.visibleMemos as memo, i (memo.slug)}

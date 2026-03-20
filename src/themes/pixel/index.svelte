@@ -7,6 +7,7 @@
   import {format} from 'date-fns';
   import pixelIdle from '$lib/assets/pixel-idle.png';
   import pixelRun from '$lib/assets/pixel-run.png';
+  import Heatmap from '$lib/components/Heatmap.svelte';
 
   let {data}: {data: PageData} = $props();
   const memoList = createMemoList(() => data, config);
@@ -34,7 +35,7 @@
 <div
   class="min-h-screen max-w-2xl mx-auto p-4 sm:p-8 selection:bg-[var(--text-color)]/50 selection:text-[var(--bg-color)]"
 >
-  <header class="mb-12 flex items-end justify-between border-b-2 border-[var(--text-color)] px-2 pb-4 relative">
+  <header class="mb-8 flex items-end justify-between border-b-2 border-[var(--text-color)] px-2 pb-4 relative">
     <div>
       <h1
         class="text-4xl text-[var(--accent-color)] drop-shadow-[3px_3px_0_var(--border-color)]/50 uppercase tracking-wider font-black"
@@ -61,6 +62,12 @@
       <p class="text-[var(--accent-color)]">BATTERY: 100%</p>
     </div>
   </header>
+
+  {#if config.heatmap}
+    <div class="mb-8 border-b-2 border-dashed border-[var(--text-color)]/30 pb-4">
+      <Heatmap memos={data.memos} />
+    </div>
+  {/if}
 
   <div class="mx-auto grid grid-cols-1 gap-8 2xl:grid-cols-2" data-selected-tag={memoList.selectedTag}>
     {#each memoList.visibleMemos as memo (memo.slug)}

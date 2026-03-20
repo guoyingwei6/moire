@@ -5,6 +5,7 @@
   import type {PageData} from '../../routes/$types';
   import {createMemoList} from '$lib/memo.svelte';
   import Background from './Background.svelte';
+  import Heatmap from '$lib/components/Heatmap.svelte';
 
   let {data, config}: {data: PageData; config: any} = $props();
   const memoList = createMemoList(() => data, config);
@@ -42,6 +43,12 @@
         </div>
       {/if}
     </header>
+
+    {#if config.heatmap}
+      <div class="mb-8 border-b border-dashed border-[#ccc] pb-6">
+        <Heatmap memos={data.memos} />
+      </div>
+    {/if}
 
     <div
       onclick={(e) => {

@@ -6,6 +6,7 @@
   import {marked} from 'marked';
   import {format} from 'date-fns';
   import {onMount} from 'svelte';
+  import Heatmap from '$lib/components/Heatmap.svelte';
 
   let {data}: {data: PageData} = $props();
   const memoList = createMemoList(() => data, config);
@@ -111,6 +112,12 @@
     class="relative z-10 pt-32 pb-32 px-4 max-w-2xl mx-auto space-y-12"
     data-selected-tag={memoList.selectedTag}
   >
+    {#if config.heatmap}
+      <div class="p-2 border border-[var(--accent-color)]/30 bg-[var(--accent-color)]/5 mb-8">
+        <Heatmap memos={data.memos} />
+      </div>
+    {/if}
+
     {#each memoList.visibleMemos as memo (memo.slug)}
       <article
         in:slide

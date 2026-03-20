@@ -4,6 +4,7 @@
   import type {PageData} from '../../routes/$types';
   import {createMemoList} from '$lib/memo.svelte';
   import Background from './Background.svelte';
+  import Heatmap from '$lib/components/Heatmap.svelte';
 
   let {data, config}: {data: PageData; config: any} = $props();
   const memoList = createMemoList(() => data, config);
@@ -71,7 +72,13 @@
       
     </aside>
 
-    <main class="md:col-span-9 space-y-16 max-w-2xl">
+    <main class="md:col-span-9 space-y-16 max-w-2xl w-full">
+      {#if config.heatmap}
+        <section class="border-b border-[var(--text-color)]/20 pb-8">
+          <Heatmap memos={data.memos} />
+        </section>
+      {/if}
+
       {#each Object.entries(memoList.groupedMemos) as [dateKey, memos] (dateKey)}
         <section in:slide>
           <div class="flex items-baseline gap-4 mb-10 border-b border-[var(--text-color)] pb-3">
