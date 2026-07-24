@@ -1,0 +1,43 @@
+{
+  "site": {
+    "title": "GYW's Website",
+    "author": "YingweiGuo",
+    "description": "Notes, photos, music and videos published from Apple Notes.",
+    "domain": "https://guoyingwei6.github.io/moire",
+    "logoEmoji": "📌",
+    "rtl": false
+  },
+  "social": {
+    "twitter": "guoyingwei6",
+    "instagram": "",
+    "github": "guoyingwei6",
+    "youtube": "",
+    "mastodon": "",
+    "email": "guoyingwei6@gmail.com"
+  },
+  "colors": {
+    "background": "#fffef2",
+    "text": "#000000",
+    "secondary": "#555555",
+    "link": "#fa2f41"
+  },
+  "navigation": [
+    { "icon": "🏠", "label": "Home", "href": "/" },
+    { "icon": "📒", "label": "Blog", "href": "/blog/" },
+    { "icon": "🎞️", "label": "Photo", "href": "/photo/" },
+    { "icon": "🎧", "label": "Music", "href": "/music/" },
+    { "icon": "📺", "label": "Video", "href": "/video/" },
+    { "icon": "🏷️", "label": "Tags", "href": "/tags/" },
+    { "icon": "🧰", "label": "Archive", "href": "/archive/" },
+    { "icon": "🧑‍💻", "label": "About", "href": "/about/about-me/" }
+  ],
+  "features": {
+    "qrCode": true,
+    "tags": true,
+    "archive": true,
+    "previousNext": true,
+    "footer": true,
+    "metadata": false,
+    "folderName": false
+  }
+}

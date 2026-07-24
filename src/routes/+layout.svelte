@@ -1,37 +1,91 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
-	import '$themes/global.css';
+  import { base } from '$app/paths';
+  import { page } from '$app/state';
+  import favicon from '$lib/assets/favicon.svg';
+  import '$themes/global.css';
+  import { config } from '../../moire.config';
 
-	import { config } from '../../moire.config';
+  let { children } = $props();
+  let menuOpen = $state(false);
+  const currentYear = new Date().getFullYear();
 
-	let { children } = $props();
+  const localHref = (href: string) => href.startsWith('/') ? `${base}${href}` || '/' : href;
 
-	$effect(() => {
-		document.body.classList.add(config.theme);
-		return () => document.body.classList.remove(config.theme);
-	});
+  const isSelected = (href: string) => {
+    const pathname = page.url.pathname.replace(base, '') || '/';
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
+  };
+
+  $effect(() => {
+    page.url.pathname;
+    menuOpen = false;
+  });
 </script>
 
 <svelte:head>
-	<title>{config.title}{config.description ? ` | ${config.description}` : ''}</title>
-	<meta name="description" content={config.description} />
-	<meta name="author" content={config.author} />
-	<meta name="keywords" content={config.keywords} />
-	<link rel="icon" href={favicon} />
-  <link rel="canonical" href={config.url} />
-
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={config.url} />
-  <meta property="og:title" content={config.title} />
-  <meta property="og:description" content={config.description} />
-  <meta property="og:image" content="{config.url}/icon.png" />
-
-  <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:url" content={config.url} />
-  <meta property="twitter:title" content={config.title} />
-  <meta property="twitter:description" content={config.description} />
-  <meta property="twitter:image" content="{config.url}/icon.png" />
-
+  <meta name="author" content={config.author} />
+  <meta name="keywords" content={config.keywords} />
+  <link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children()}
+<main
+  class="site-frame"
+  dir={config.rtl ? 'rtl' : 'ltr'}
+  style:--page-bg={config.colors.background}
+  style:--text={config.colors.text}
+  style:--secondary={config.colors.secondary}
+  style:--accent={config.colors.link}
+>
+  <aside class:menu-open={menuOpen} class="site-sidebar" aria-label="Site navigation">
+    <div class="site-sidebar-header">
+      <a class="site-pin" href={localHref('/')} aria-label={`${config.title} home`}>{config.logoEmoji}</a>
+      <button
+        class="menu-toggle"
+        type="button"
+        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={menuOpen}
+        aria-controls="site-navigation"
+        onclick={() => menuOpen = !menuOpen}
+      >
+        <span>—</span><span>—</span><span>—</span>
+      </button>
+    </div>
+
+    <nav id="site-navigation" class="site-navigation">
+      <ul>
+        {#each config.navigation as item}
+          <li>
+            <a
+              href={localHref(item.href)}
+              class:selected={isSelected(item.href)}
+              aria-current={isSelected(item.href) ? 'page' : undefined}
+            >
+              <span aria-hidden="true">{item.icon}</span><span>{item.label}</span>
+            </a>
+          </li>
+        {/each}
+      </ul>
+    </nav>
+  </aside>
+
+  <section class="site-content">
+    {@render children()}
+  </section>
+
+  {#if config.features.footer}
+    <footer class="site-footer">
+      <small>{config.author} © 2022–{currentYear}</small>
+      <nav aria-label="Utility navigation">
+        {#each config.footerLinks as item}
+          <a
+            href={localHref(item.href)}
+            target={item.external && item.href.startsWith('http') ? '_blank' : undefined}
+            rel={item.external ? 'me noreferrer' : undefined}
+          >{item.label}</a>
+        {/each}
+      </nav>
+      <small>Published with Apple Notes, GitHub and SvelteKit.</small>
+    </footer>
+  {/if}
+</main>

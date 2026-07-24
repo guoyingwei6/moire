@@ -1,65 +1,58 @@
+# Moire Blog
 
-<div align="center">
-  <img src="images/icon.svg" width="120" height="auto" alt="Moire Logo">
-  <br/>
-  <br/>
-  <h1>Moire</h1>
-  <p>
-    Sync your thoughts from Apple Notes to GitHub Pages by Shortcuts.
-  </p>
-  <p>
-    <a href="https://moire.blog">Moire</a> &nbsp;&nbsp;|&nbsp;&nbsp; <a href="https://docs.moire.blog">Docs</a> &nbsp;&nbsp;|&nbsp;&nbsp; <a href="https://themes.moire.blog">Themes</a>
-  </p>
-  <br/>
-  <img src="images/moire.png" width="100%" alt="Moire Preview">
-</div>
+This `blog` branch turns the upstream Moire memo stream into a folder-based, static blog inspired by Montaigne. Apple Notes stays the writing app, a local Shortcut exports only the selected public folder, GitHub stores the Markdown and images, and SvelteKit builds the complete site.
 
-<br/>
+No hosted Notes account or third-party publishing server is required. GitHub cannot read Apple Notes directly, so publishing still begins on the owner’s device.
 
-## Introduction
+## Content model
 
-Moire is a tool designed to seamlessly synchronize your thoughts from Apple Notes using Shortcuts.
-
-## Features
-
-- **Seamless Sync**: Direct integration with Apple Notes via Shortcuts.
-- **Markdown Export**: Convert your notes to Markdown format. Easy to migrate.
-- **Theme Support**: Customizable themes (e.g., Receipt, Pixel).
-
-## Development
-
-### Prerequisites
-
-Ensure you have the following installed:
-- Node.js (v18 or higher)
-- pnpm (recommended)
-
-### Installation
-
-Clone the repository and install dependencies:
-
-```bash
-git clone https://github.com/moirelog/moire.git
-cd moire
-pnpm install
+```text
+content/
+├── index.md              -> /
+├── blog/
+│   ├── index.md          -> /blog/
+│   └── a-note.md         -> /blog/a-note/
+├── photo/
+├── music/
+├── video/
+└── about/
 ```
 
-### Development
+Folders become section pages. Section pages show titles and dates; each title opens a permanent note page. The build also creates Tags, Archive, QR, RSS and Sitemap pages. Fenced Markdown code blocks and any number of local Markdown images are supported.
 
-Start the development server:
+## Site settings
+
+Edit [`site.config.json`](site.config.json) for the title, author, public URL, logo emoji, sidebar menu, social links, colors and display switches. GitHub Actions YAML is only the build-and-deploy recipe; it is not the settings database.
+
+See [`docs/configuration.md`](docs/configuration.md) for every field and [`docs/apple-notes-github-sync.md`](docs/apple-notes-github-sync.md) for the Notes-to-GitHub content protocol.
+
+## Local development
 
 ```bash
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-### Build
-
-Build for production:
+Validate a root-domain build:
 
 ```bash
+pnpm test
+pnpm check
 pnpm build
 ```
 
+Validate GitHub project Pages at `/moire`:
+
+```bash
+BASE_PATH=/moire pnpm build
+```
+
+## Branch boundary
+
+- `main` remains available for synchronizing the upstream Moire project.
+- This implementation is developed on `blog`.
+- The committed Pages workflow still listens only to `main`; pushing `blog` does not publish or replace the current site.
+
 ## License
 
-This project is licensed under the GPL-3.0 License.
+This project remains licensed under GPL-3.0.

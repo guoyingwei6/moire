@@ -3,12 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: ["main"]
-    paths-ignore:
-      - '**.png'
-      - '**.jpg'
-      - '**.jpeg'
-      - '**.gif'
-      - '**.webp'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -24,6 +18,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -40,17 +35,24 @@ jobs:
           node-version: "20"
           cache: "pnpm"
 
-      - name: Inject Memos from memos branch
-        if: github.repository == 'moirelog/moire'
-        run: |
-          git fetch origin memos
-          git checkout origin/memos -- src/memos || echo "Memos branch not found or empty"
-
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Check
+        run: pnpm check
 
       - name: Build
         run: pnpm run build
+        env:
+          BASE_PATH: /moire
+
+      - name: Validate build output
+        run: pnpm test:build
+        env:
+          BASE_PATH: /moire
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -58,6 +60,7 @@ jobs:
           path: build
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -1,28 +1,25 @@
+import type { RequestHandler } from './$types';
 import { config } from '../../../moire.config';
-import { getMemos } from '$lib/server/memos';
+import { getAllPublicRoutes } from '$lib/server/content';
 
-export async function GET() {
-  const memos = await getMemos();
-  const headers = { 'Content-Type': 'application/xml' };
+export const prerender = true;
 
-  const pages: { loc: string; priority: number; changefreq: string; lastmod?: Date }[] = [
-    { loc: config.url, priority: 1.0, changefreq: 'daily' }
-  ];
+const escapeXml = (value: string) => value
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&apos;');
 
-  const sitemap = `<?xml version="1.0" encoding="UTF-8" ?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    ${ pages
-      .map(
-        (page) => `
-    <url>
-        <loc>${page.loc }</loc>
-        <changefreq>${ page.changefreq }</changefreq>
-        <priority>${ page.priority }</priority>
-        ${ page.lastmod ? `<lastmod>${ new Date(page.lastmod).toISOString() }</lastmod>` : '' }
-    </url>`
-      )
-    .join('')}
-</urlset>`;
+export const GET: RequestHandler = () => {
+  const origin = config.url.replace(/\/$/, '');
+  const urls = [...new Set(getAllPublicRoutes())]
+    .filter((route) => !route.endsWith('.xml'))
+    .map((route) => `<url><loc>${escapeXml(`${origin}${route}`)}</loc></url>`)
+    .join('');
 
-  return new Response(sitemap, { headers });
-}
+  return new Response(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`, {
+    headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+  });
+};
