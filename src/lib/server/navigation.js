@@ -1,5 +1,5 @@
 /**
- * @typedef {{ label: string, icon: string, href: string }} NavigationItem
+ * @typedef {{ label: string, icon: string, href: string, external?: boolean }} NavigationItem
  * @typedef {{ route: string, title: string }} SectionItem
  */
 

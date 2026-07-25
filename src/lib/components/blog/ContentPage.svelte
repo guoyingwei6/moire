@@ -35,15 +35,18 @@
   <meta property="og:url" content={canonical} />
   <meta property="og:title" content={displayTitle} />
   <meta property="og:description" content={record.summary || config.description} />
+  {#if record.hidden}
+    <meta name="robots" content="noindex, nofollow" />
+  {/if}
 </svelte:head>
 
 <h1>{displayTitle}</h1>
 
-{#if config.features.folderName && record.kind === 'post' && folder && folder.route !== '/'}
+{#if record.options.showBreadcrumbs && record.kind === 'post' && folder && folder.route !== '/'}
   <a class="folder-name" href={href(folder.route)}>{folder.title}</a>
 {/if}
 
-{#if record.kind === 'post' && record.tags.length}
+{#if record.kind === 'post' && !record.hidden && record.tags.length}
   <nav class="post-tags" aria-label="Tags">
     {#each record.tags as tag}
       <a href={href(`/tags/${encodeURIComponent(tag.toLocaleLowerCase().replace(/\s+/g, '-'))}/`)}>#{tag}</a>
@@ -62,11 +65,13 @@
 {/if}
 
 {#if record.kind === 'section'}
-  <SectionListing {entries} />
+  <SectionListing {entries} layout={record.options.layout} previewProps={record.options.previewProps} />
+{:else if record.kind === 'home' && record.options.showChildren}
+  <SectionListing {entries} layout={record.options.layout} previewProps={record.options.previewProps} />
 {/if}
 
 {#if record.kind === 'post'}
-  {#if config.features.metadata}
+  {#if record.options.showNoteMetadata}
     <dl class="post-metadata">
     {#if record.created}
       <div><dt>Date</dt><dd>{displayDate(record.created)}</dd></div>
@@ -76,7 +81,7 @@
     </dl>
   {/if}
 
-  {#if config.features.previousNext && (previous || next)}
+  {#if record.options.showNoteNavigation && (previous || next)}
     <nav class="post-navigation" aria-label="Post navigation">
       {#if previous}
         <a href={href(previous.route)}><small>Previous</small><span>{previous.title}</span></a>

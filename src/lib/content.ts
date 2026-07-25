@@ -1,4 +1,21 @@
 export type ContentKind = 'home' | 'section' | 'post';
+export type ContentLayout = 'list' | 'timeline' | 'feed' | 'grid' | 'table';
+export type ContentSort = 'create' | 'update' | 'title';
+
+export type ContentOptions = {
+  pinned: boolean;
+  showInMenu: boolean;
+  showInFooter: boolean;
+  showChildren: boolean;
+  showNestedNotes: boolean;
+  showBreadcrumbs: boolean;
+  showNoteNavigation: boolean;
+  showNoteFooter: boolean;
+  showNoteMetadata: boolean;
+  sortBy: ContentSort;
+  layout: ContentLayout;
+  previewProps: string[];
+};
 
 export type ContentSummary = {
   route: string;
@@ -9,6 +26,9 @@ export type ContentSummary = {
   tags: string[];
   kind: ContentKind;
   parentRoute: string | null;
+  hidden: boolean;
+  properties: Record<string, string>;
+  options: ContentOptions;
 };
 
 export type ContentRecord = ContentSummary & {

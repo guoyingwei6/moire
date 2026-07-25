@@ -1,7 +1,31 @@
 import { base } from '$app/paths';
 import { Marked, Renderer } from 'marked';
-import type { ArchiveGroup, ContentRecord, ContentSummary, TagGroup } from '$lib/content';
+import type {
+  ArchiveGroup,
+  ContentLayout,
+  ContentOptions,
+  ContentRecord,
+  ContentSort,
+  ContentSummary,
+  TagGroup
+} from '$lib/content';
+import {
+  normalizePropertyName,
+  parseBooleanProperty,
+  parseIndexNoteConfiguration,
+  parseListProperty,
+  parseNoteConfiguration
+} from '$lib/config/index-note.js';
+import {
+  isDiscoverable,
+  isMenuVisible,
+  isUnderscoreDraft,
+  nearestExistingParentRoute,
+  publicRouteSegment,
+  publicTitle
+} from '$lib/server/content-policy.js';
 import { isSafeLinkHref } from '$lib/server/safe-link.js';
+import { config } from '../../../moire.config';
 
 const markdownModules = import.meta.glob('/content/**/*.md', {
   query: '?raw',
@@ -37,6 +61,8 @@ type DraftRecord = {
   updated: string | null;
   tags: string[];
   parentRoute: string | null;
+  hidden: boolean;
+  localProperties: Record<string, string>;
 };
 
 function escapeHtml(value: string): string {
@@ -79,11 +105,19 @@ function titleFromFilename(sourcePath: string): string {
 }
 
 function extractTitle(body: string, metadata: Frontmatter, sourcePath: string): { title: string; body: string } {
-  if (metadata.title) return { title: metadata.title, body };
+  const heading = body.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*(?:\r?\n|$)/);
+  if (metadata.title) {
+    const headingText = heading?.[2].trim();
+    const isPageHeading = heading?.[1].length === 1
+      || headingText?.localeCompare(metadata.title, undefined, { sensitivity: 'base' }) === 0;
+    return {
+      title: metadata.title,
+      body: heading && isPageHeading ? body.slice(heading[0].length).trimStart() : body
+    };
+  }
 
-  const heading = body.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*(?:\r?\n|$)/);
   if (heading) {
-    return { title: heading[1].trim(), body: body.slice(heading[0].length).trimStart() };
+    return { title: heading[2].trim(), body: body.slice(heading[0].length).trimStart() };
   }
 
   const bold = body.match(/^\s*\*\*(.+?)\*\*\s*(?:\r?\n|$)/);
@@ -113,7 +147,11 @@ function routeFromSource(sourcePath: string): { route: string; kind: ContentReco
   const segments = relative.split('/').filter(Boolean);
   const isIndex = segments.at(-1)?.toLowerCase() === 'index';
 
-  if (isIndex) segments.pop();
+  if (isIndex) {
+    segments.pop();
+  } else if (segments.length) {
+    segments[segments.length - 1] = publicRouteSegment(segments.at(-1) ?? '', sourcePath);
+  }
   const route = segments.length ? `/${segments.join('/')}/` : '/';
   const kind = route === '/' ? 'home' : isIndex ? 'section' : 'post';
   return { route, kind };
@@ -233,20 +271,34 @@ function renderMarkdown(markdown: string, sourcePath: string): string {
 function buildDrafts(): DraftRecord[] {
   return Object.entries(markdownModules).map(([sourcePath, raw]) => {
     const { metadata, body: rawBody } = parseFrontmatter(raw);
-    const { title, body: bodyWithoutTitle } = extractTitle(rawBody, metadata, sourcePath);
-    const { body, tags } = extractTags(bodyWithoutTitle);
+    const noteConfiguration = sourcePath === '/content/index.md'
+      ? parseIndexNoteConfiguration(rawBody)
+      : parseNoteConfiguration(rawBody);
+    const titleMetadata = noteConfiguration.properties.title
+      ? { ...metadata, title: noteConfiguration.properties.title }
+      : metadata;
+    const extracted = extractTitle(noteConfiguration.cleanedMarkdown, titleMetadata, sourcePath);
+    const hidden = isUnderscoreDraft(sourcePath, extracted.title);
+    const { body, tags: inlineTags } = extractTags(extracted.body);
+    const tags = [...new Set([
+      ...parseListProperty(noteConfiguration.properties.tags),
+      ...inlineTags
+    ])];
     const { route, kind } = routeFromSource(sourcePath);
+    const date = noteConfiguration.properties.date ?? metadata.date ?? metadata.created;
 
     return {
       sourcePath,
       route,
       kind,
-      title,
+      title: publicTitle(extracted.title),
       body,
-      created: parseDate(metadata.created, sourcePath, 'created'),
+      created: parseDate(date, sourcePath, 'created'),
       updated: parseDate(metadata.updated ?? metadata.modified, sourcePath, 'updated'),
       tags,
-      parentRoute: parentRouteFor(route, kind)
+      parentRoute: parentRouteFor(route, kind),
+      hidden,
+      localProperties: noteConfiguration.properties
     };
   });
 }
@@ -256,6 +308,7 @@ function implicitSections(drafts: DraftRecord[]): DraftRecord[] {
   const sections = new Map<string, DraftRecord>();
 
   for (const draft of drafts) {
+    if (draft.hidden) continue;
     const segments = draft.route.split('/').filter(Boolean);
     if (draft.kind === 'post') segments.pop();
     else if (draft.kind === 'section') segments.splice(-1, 1);
@@ -275,12 +328,92 @@ function implicitSections(drafts: DraftRecord[]): DraftRecord[] {
         created: null,
         updated: null,
         tags: [],
-        parentRoute: parentRouteFor(route, 'section')
+        parentRoute: parentRouteFor(route, 'section'),
+        hidden: false,
+        localProperties: {}
       });
     }
   }
 
   return [...sections.values()];
+}
+
+const LOCAL_PROPERTIES = new Set([
+  'aliases',
+  'date',
+  'layout',
+  'pinned',
+  'previewprops',
+  'showchildren',
+  'showinfooter',
+  'showinmenu',
+  'shownestednotes',
+  'slug',
+  'sortby',
+  'tags',
+  'title'
+]);
+
+function inheritedProperties(parent: Record<string, string> | undefined): Record<string, string> {
+  if (!parent) return {};
+  return Object.fromEntries(Object.entries(parent).filter(([name]) => !LOCAL_PROPERTIES.has(name)));
+}
+
+function booleanOption(
+  properties: Record<string, string>,
+  names: string[],
+  fallback: boolean,
+  sourcePath: string
+): boolean {
+  for (const name of names) {
+    const raw = properties[name];
+    if (raw === undefined) continue;
+    const value = parseBooleanProperty(raw);
+    if (value === null) throw new Error(`Invalid ${name} value in ${sourcePath || 'implicit folder'}: ${raw}`);
+    return value;
+  }
+  return fallback;
+}
+
+function sortOption(properties: Record<string, string>, sourcePath: string): ContentSort {
+  const raw = properties.sortby?.trim().toLocaleLowerCase();
+  if (!raw || ['create', 'created', 'date'].includes(raw)) return 'create';
+  if (['update', 'updated', 'modified'].includes(raw)) return 'update';
+  if (raw === 'title') return 'title';
+  throw new Error(`Invalid sortBy value in ${sourcePath || 'implicit folder'}: ${properties.sortby}`);
+}
+
+function layoutOption(properties: Record<string, string>, sourcePath: string): ContentLayout {
+  const raw = properties.layout?.trim().toLocaleLowerCase();
+  if (!raw) return 'list';
+  if (['list', 'timeline', 'feed', 'grid', 'table'].includes(raw)) return raw as ContentLayout;
+  throw new Error(`Invalid layout value in ${sourcePath || 'implicit folder'}: ${properties.layout}`);
+}
+
+function contentOptions(
+  draft: DraftRecord,
+  effective: Record<string, string>
+): ContentOptions {
+  const local = draft.localProperties;
+  return {
+    pinned: booleanOption(local, ['pinned'], false, draft.sourcePath),
+    showInMenu: booleanOption(local, ['showinmenu'], true, draft.sourcePath),
+    showInFooter: booleanOption(local, ['showinfooter'], false, draft.sourcePath),
+    showChildren: booleanOption(effective, ['showchildren'], draft.kind !== 'home', draft.sourcePath),
+    showNestedNotes: booleanOption(effective, ['shownestednotes'], false, draft.sourcePath),
+    showBreadcrumbs: booleanOption(effective, ['showbreadcrumbs'], config.features.folderName, draft.sourcePath),
+    showNoteNavigation: booleanOption(
+      effective,
+      ['shownotenavigation', 'showpostnavigation'],
+      config.features.previousNext,
+      draft.sourcePath
+    ),
+    showNoteFooter: booleanOption(effective, ['shownotefooter'], config.features.footer, draft.sourcePath),
+    showNoteMetadata: booleanOption(effective, ['shownotemetadata'], config.features.metadata, draft.sourcePath),
+    sortBy: sortOption(effective, draft.sourcePath),
+    layout: layoutOption(effective, draft.sourcePath),
+    previewProps: parseListProperty(effective.previewprops).map(normalizePropertyName).filter(Boolean)
+  };
 }
 
 function buildRecords(): ContentRecord[] {
@@ -298,8 +431,25 @@ function buildRecords(): ContentRecord[] {
     routes.set(normalizedRoute, draft.sourcePath || draft.route);
   }
 
+  const draftsByRoute = new Map(drafts.map((draft) => [draft.route, draft]));
+  const effectiveByRoute = new Map<string, Record<string, string>>();
+
+  const effectiveFor = (draft: DraftRecord): Record<string, string> => {
+    const existing = effectiveByRoute.get(draft.route);
+    if (existing) return existing;
+    const parentRoute = nearestExistingParentRoute(draft.parentRoute, draftsByRoute);
+    const parent = parentRoute ? draftsByRoute.get(parentRoute) : undefined;
+    const effective = {
+      ...inheritedProperties(parent ? effectiveFor(parent) : undefined),
+      ...draft.localProperties
+    };
+    effectiveByRoute.set(draft.route, effective);
+    return effective;
+  };
+
   return drafts.map((draft) => {
     const wordCount = countWords(draft.body);
+    const properties = effectiveFor(draft);
     return {
       route: draft.route,
       kind: draft.kind,
@@ -311,6 +461,9 @@ function buildRecords(): ContentRecord[] {
       updated: draft.updated,
       tags: draft.tags,
       parentRoute: draft.parentRoute,
+      hidden: draft.hidden,
+      properties,
+      options: contentOptions(draft, properties),
       wordCount,
       readingMinutes: Math.max(1, Math.ceil(wordCount / 220))
     };
@@ -322,22 +475,34 @@ function asSummary(record: ContentRecord): ContentSummary {
   return summary;
 }
 
-function byNewest(left: ContentRecord | ContentSummary, right: ContentRecord | ContentSummary): number {
-  return (right.created ?? '').localeCompare(left.created ?? '') || left.title.localeCompare(right.title);
+function compareContent(
+  sortBy: ContentSort,
+  left: ContentRecord | ContentSummary,
+  right: ContentRecord | ContentSummary
+): number {
+  if (left.options.pinned !== right.options.pinned) return left.options.pinned ? -1 : 1;
+  if (sortBy === 'title') return left.title.localeCompare(right.title) || left.route.localeCompare(right.route);
+  const leftDate = sortBy === 'update' ? left.updated : left.created;
+  const rightDate = sortBy === 'update' ? right.updated : right.created;
+  return (rightDate ?? '').localeCompare(leftDate ?? '') || left.title.localeCompare(right.title);
 }
 
 const records = buildRecords();
 const recordsByRoute = new Map(records.map((record) => [record.route, record]));
 
+function findRecord(route: string): ContentRecord | null {
+  const normalized = route === '/' ? '/' : `/${route.split('/').filter(Boolean).join('/')}/`;
+  return recordsByRoute.get(normalized) ?? null;
+}
+
 export function getHome(): ContentRecord {
-  const home = recordsByRoute.get('/');
+  const home = findRecord('/');
   if (!home) throw new Error('Missing required content/index.md home page');
   return home;
 }
 
 export function getRecord(route: string): ContentRecord | null {
-  const normalized = route === '/' ? '/' : `/${route.split('/').filter(Boolean).join('/')}/`;
-  return recordsByRoute.get(normalized) ?? null;
+  return findRecord(route);
 }
 
 export function getRecordSummary(route: string | null): ContentSummary | null {
@@ -347,17 +512,30 @@ export function getRecordSummary(route: string | null): ContentSummary | null {
 }
 
 export function getSectionEntries(route: string): ContentSummary[] {
+  const section = getRecord(route);
+  const nested = section?.options.showNestedNotes ?? false;
   return records
-    .filter((record) => record.parentRoute === route && record.kind !== 'home')
-    .sort(byNewest)
+    .filter((record) => (
+      record.kind !== 'home'
+      && isMenuVisible(record)
+      && (nested ? record.route.startsWith(route) && record.route !== route : record.parentRoute === route)
+    ))
+    .sort((left, right) => compareContent(section?.options.sortBy ?? 'create', left, right))
     .map(asSummary);
 }
 
 export function getPostNeighbors(record: ContentRecord): { previous: ContentSummary | null; next: ContentSummary | null } {
-  if (record.kind !== 'post' || !record.parentRoute) return { previous: null, next: null };
+  if (record.kind !== 'post' || !record.parentRoute || record.hidden || !record.options.showNoteNavigation) {
+    return { previous: null, next: null };
+  }
+  const parent = getRecord(record.parentRoute);
   const siblings = records
-    .filter((candidate) => candidate.kind === 'post' && candidate.parentRoute === record.parentRoute)
-    .sort(byNewest);
+    .filter((candidate) => (
+      candidate.kind === 'post'
+      && candidate.parentRoute === record.parentRoute
+      && isMenuVisible(candidate)
+    ))
+    .sort((left, right) => compareContent(parent?.options.sortBy ?? 'create', left, right));
   const index = siblings.findIndex((candidate) => candidate.route === record.route);
   return {
     previous: index >= 0 ? (siblings[index + 1] ? asSummary(siblings[index + 1]) : null) : null,
@@ -372,7 +550,16 @@ export function getCatchAllEntries(): { path: string }[] {
 }
 
 export function getPosts(): ContentRecord[] {
-  return records.filter((record) => record.kind === 'post').sort(byNewest);
+  return records
+    .filter((record) => record.kind === 'post' && isDiscoverable(record))
+    .sort((left, right) => compareContent('create', left, right));
+}
+
+export function getFooterEntries(): ContentSummary[] {
+  return records
+    .filter((record) => record.route !== '/' && isDiscoverable(record) && record.options.showInFooter)
+    .sort((left, right) => left.title.localeCompare(right.title))
+    .map(asSummary);
 }
 
 export function getTagGroups(): TagGroup[] {
@@ -418,7 +605,7 @@ export function getArchiveGroups(): ArchiveGroup[] {
 
 export function getAllPublicRoutes(): string[] {
   return [
-    ...records.map((record) => record.route),
+    ...records.filter(isDiscoverable).map((record) => record.route),
     '/tags/',
     ...getTagGroups().map((group) => `/tags/${encodeURIComponent(group.slug)}/`),
     '/archive/',

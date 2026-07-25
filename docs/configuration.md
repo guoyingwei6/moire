@@ -1,77 +1,106 @@
-# Site configuration
+# Configure the site from Apple Notes
 
-All Montaigne-style site settings live in the repository root at `site.config.json`. Edit that file in GitHub's web editor or locally, commit it to the publishing branch, and let the normal GitHub Pages build run.
+The public root note named `index` is the primary control surface. It can hold the Home page body, the visible navigation and global site settings in one place. `site.config.json` remains the validated fallback when the menu table is absent. A present but invalid menu stops the build instead of silently widening the visible publication surface.
 
-GitHub Actions YAML is intentionally not the settings database. A workflow should only install, check, build and deploy the site. Keeping the settings in JSON makes them usable during local preview, visible to TypeScript, and independent of a specific CI provider.
+GitHub Actions YAML is intentionally not a settings database. The workflow only checks, builds and deploys the content that the Shortcut has already exported.
 
-## Settings
+## The one root index
 
-```json
-{
-  "site": {
-    "title": "GYW's Website",
-    "author": "YingweiGuo",
-    "description": "Notes published from Apple Notes.",
-    "domain": "https://guoyingwei6.github.io/moire",
-    "logoEmoji": "📌",
-    "rtl": false
-  },
-  "social": {
-    "twitter": "",
-    "instagram": "",
-    "github": "https://github.com/guoyingwei6",
-    "youtube": "",
-    "mastodon": "",
-    "email": ""
-  },
-  "colors": {
-    "background": "#fffef2",
-    "text": "#000000",
-    "secondary": "#555555",
-    "link": "#fa2f41"
-  },
-  "navigation": [
-    { "icon": "🏠", "label": "Home", "href": "/" },
-    { "icon": "📒", "label": "Blog", "href": "/blog/" },
-    { "icon": "🎞️", "label": "Photo", "href": "/photo/" },
-    { "icon": "🎧", "label": "Music", "href": "/music/" },
-    { "icon": "📺", "label": "Video", "href": "/video/" },
-    { "icon": "🏷️", "label": "Tags", "href": "/tags/" },
-    { "icon": "🧰", "label": "Archive", "href": "/archive/" },
-    { "icon": "🧑‍💻", "label": "About", "href": "/about/about-me/" }
-  ],
-  "features": {
-    "qrCode": true,
-    "tags": true,
-    "archive": true,
-    "previousNext": true,
-    "footer": true,
-    "metadata": false,
-    "folderName": false
-  }
-}
+Add this table to the root `index` note:
+
+```markdown
+| menu | link | type | source | path |
+| --- | --- | --- | --- | --- |
+| 🏠 Home | / | | | |
+| 📒 Blog | /blog/ | | MacOS setting preferences | blog |
+| 🎞️ Photo | /photo/ | | Campus Sunset | photo |
+| 🏷️ Tags | /tags/ | | | |
+| 🧰 Archive | /archive/ | | | |
+| About | /about/about-me/ | footer | About Me | about |
 ```
 
-- `site.title` controls the visible home heading, browser titles, feeds and site metadata. The first heading in `content/index.md` is still used as a content fallback during parsing, so keeping the two values aligned makes the source file easier to understand.
-- `site.domain` is the public site URL. For a project Pages site, keep the repository path, for example `https://owner.github.io/moire`. For a custom domain use its complete `https://` URL. A trailing slash is accepted and removed during the build.
-- `site.logoEmoji` is the mark shown above the sidebar navigation. `site.rtl` changes the document content direction and moves the desktop sidebar to the right.
-- `social.twitter`, `social.instagram` and `social.github` accept either a username (with an optional leading `@`) or a complete `https://` profile URL. Usernames are expanded to the corresponding public profile URL during the build. YouTube and Mastodon accept complete `https://` URLs. Leave unused services empty. `social.email` is a public address; never put a GitHub token or other secret here.
-- Colors must be 3, 4, 6 or 8 digit hex colors such as `#fff`, `#fffef2` or `#000000ff`. Invalid values stop the build instead of silently producing a broken theme.
-- `navigation` is the ordered set of explicit desktop and mobile sidebar items. Each item has an emoji or short mark, a label and a site-local path. Paths must begin with one `/`, cannot contain `..`, a query or a fragment, and must be unique. Top-level folders discovered under `content/` are added automatically before Tags and Archive when no configured item already points to that folder or one of its descendants. A configured item therefore acts as an override for its folder: use it to choose the icon, label, order, or a deeper landing page such as `/about/about-me/`. Nested folders are discovered automatically and appear within their parent folder page rather than flattening the complete tree into the sidebar.
-- `features.qrCode` controls the QR link in the footer. `features.tags` and `features.archive` control their sidebar and footer links. These switches do not delete or make the corresponding public pages private, and hiding the Tags link does not hide tags attached to a note.
-- `previousNext` controls the links below an article, `footer` controls the complete site footer, `metadata` controls the visible Date/Words/Time to read block, and `folderName` controls whether a post shows its parent folder name. Search-engine metadata remains enabled when the visible metadata block is hidden. Social and QR links live in the footer, so they are not visible when `footer` is disabled.
+- `menu` is the visible label. An initial emoji becomes its icon; a bullet is used when no emoji is present.
+- `link` accepts a safe site-local path or a credential-free HTTPS URL.
+- An empty `type` means Sidebar. `header` puts the item in the top navigation. `footer` is retained for compatibility with older Montaigne index tables (including this site's original table). New pages can also enter the footer through `showInFooter` metadata.
+- `source` is Moire's iOS-only extension. Enter the exact plain-text title of one uniquely titled note in the folder that the row authorizes for publication. The exporter first uses Notes' supported `Name contains` search, then keeps exact-title matches and requires exactly one. The website ignores this column. Home, Tags, Archive and external virtual links leave it empty.
+- `path` is the safe repository directory below `content/`, for example `blog` or `projects/field-notes`. Every row with a non-empty `source` must also provide an explicit `path`; the exporter does not guess it from the URL or Notes folder name. The website parses but does not display or execute it. This does not make iOS capable of discovering Notes descendants.
 
-Every field is checked during the build. Required text cannot be empty, booleans must be real JSON booleans, public URLs must use HTTPS, profile URLs cannot contain embedded credentials, and the public email must look like an email address. A validation failure names the exact `site.config.json` field that needs attention.
+When a valid root menu table exists, it is authoritative: only its rows appear in Sidebar/Header navigation. This is the requested visual publication allow-list. Notes already present in Git remain directly reachable, just like Montaigne drafts, but they are not automatically inserted into the navigation. If there is no menu table, `site.config.json` plus automatic folder discovery is used for backward compatibility. If a menu table exists but is invalid, the build stops instead of falling back open.
 
-`moire.config.ts` is the typed adapter between this JSON file and SvelteKit. Most site owners should not need to edit it.
+The configuration table itself is removed before the Home page Markdown renders.
 
-## GitHub Pages base path
+## Global settings in the same note
 
-The public domain and the SvelteKit build base are related but separate. Do not put `BASE_PATH` in `site.config.json` and do not remove the existing `base` handling in `svelte.config.js`.
+Add a separate `name/value` table anywhere in the root `index` note:
+
+```markdown
+| name | value |
+| --- | --- |
+| title | GYW's Website |
+| description | Notes, photos, music and videos published from Apple Notes. |
+| logoEmoji | 📌 |
+| showChildren | no |
+| backgroundColor | #fffef2 |
+| linkColor | #fa2f41 |
+```
+
+Currently connected global properties are:
+
+- `title`, `author`, `description`, `domain`, `emoji`/`logoEmoji`, `RTL`
+- `twitter`, `instagram`, `github`, `youtube`, `mastodon`, `email` (also accepts the older `...Username`, `...Link` and `publicEmail` names)
+- `backgroundColor`, `textColor`, `secondaryTextColor`, `linkColor`
+- `showQRCode`, `showTags`, `showArchive`, `showNoteNavigation`, `showNoteFooter`, `showNoteMetadata`, `showBreadcrumbs`
+- Montaigne-compatible inverse names `hideQRCodeLink`, `hideTagsLink` and `hideArchiveLink`
+
+Booleans accept `yes/no`, `true/false`, `1/0` and `on/off`. Colours must be 3, 4, 6 or 8 digit hex values. Invalid controlled values stop the build with the property name instead of silently generating broken CSS or unsafe links.
+
+`showChildren=no` on the root hides the Home page's child listing; it does not stop child folders from publishing or hide explicit Sidebar rows.
+
+## Folder and note metadata
+
+The same `name/value` table may be placed in a folder's optional `index` note or in an ordinary note. Configuration rows are removed from the rendered article. Display properties inherit in this order:
+
+```text
+ordinary note > folder index > root index > site.config.json defaults
+```
+
+Each property name may appear only once in a note. Duplicate rows stop the build so an ambiguous setting cannot silently fall back to a broader default.
+
+Core properties connected in this branch:
+
+- `pinned`: place a note first inside its folder.
+- `showInMenu`: hide an ordinary note or child folder from its folder listing without removing its direct URL.
+- `showInFooter`: add a public page to the footer.
+- `showChildren`: show or hide a collection's child listing.
+- `showNestedNotes`: include descendants rather than only direct children.
+- `sortBy`: `create`, `update` or `title`.
+- `layout`: `list`, `timeline`, `feed`, `grid` or `table`.
+- `previewProps`: comma-separated metadata keys displayed in folder previews/table columns.
+- `showBreadcrumbs`, `showNoteNavigation`, `showNoteFooter`, `showNoteMetadata`.
+- `date`: override the displayed/ordering creation date; `tags`: comma-separated tags merged with hashtag lines.
+
+Identity and collection controls such as `pinned`, `showInMenu`, `showInFooter`, `showChildren`, `sortBy`, `layout` and `previewProps` are local to that note/index. Visual note settings such as breadcrumbs and metadata visibility inherit.
+
+A folder `index` is optional. Without it, the folder still publishes and lists its notes using defaults. Creating a new ordinary note inside an already authorized folder requires no index edit and no Shortcut edit.
+
+## Lightweight drafts
+
+Prefix an Apple Note title with `_` to make it a lightweight draft. For example `_New camera notes` becomes the direct path `/new-camera-notes/`, but is excluded from discovery surfaces including:
+
+- Sidebar and folder listings
+- Tags and Archive
+- RSS and Sitemap
+- footer links and previous/next navigation
+
+The direct page is deliberately still generated and carries `noindex, nofollow` for ordinary search crawlers. This is not privacy protection: the Markdown and attachments remain in the public repository and Git history once uploaded.
+
+## Repository fallback and Pages base path
+
+`site.config.json` still stores defaults, social links and a fallback menu. Most daily changes should now happen in the root Apple Note instead of editing JSON or code.
+
+The public domain and SvelteKit base path remain separate:
 
 - Custom domain or user Pages site: build with an empty `BASE_PATH`.
 - Project Pages site at `/moire`: build with `BASE_PATH=/moire`.
 
-This keeps generated links correct in local preview, GitHub Pages project deployments and future custom-domain deployments without duplicating settings in workflow YAML.
-
-Changing `site.domain` updates generated canonical links, feeds, the sitemap and the QR code; it does not configure GitHub Pages or DNS. A custom domain must also be configured in the repository's Pages settings and at the DNS provider. Likewise, the deployment workflow must pass the matching `BASE_PATH` when publishing below a repository path.
+Changing the root `domain` setting updates canonical URLs, feeds, Sitemap and QR output. It does not configure DNS or GitHub Pages itself.

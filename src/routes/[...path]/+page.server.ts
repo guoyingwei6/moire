@@ -11,7 +11,7 @@ export const load: PageServerLoad = ({ params }) => {
 
   return {
     record,
-    entries: record.kind === 'section' ? getSectionEntries(record.route) : [],
+    entries: record.kind === 'section' && record.options.showChildren ? getSectionEntries(record.route) : [],
     folder: getRecordSummary(record.parentRoute),
     ...getPostNeighbors(record)
   };

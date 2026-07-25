@@ -12,6 +12,7 @@
   const localHref = (href: string) => href.startsWith('/') ? `${base}${href}` || '/' : href;
 
   const isSelected = (href: string) => {
+    if (!href.startsWith('/')) return false;
     const pathname = page.url.pathname.replace(base, '') || '/';
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
@@ -58,6 +59,8 @@
           <li>
             <a
               href={localHref(item.href)}
+              target={item.external ? '_blank' : undefined}
+              rel={item.external ? 'noreferrer' : undefined}
               class:selected={isSelected(item.href)}
               aria-current={isSelected(item.href) ? 'page' : undefined}
             >
@@ -70,14 +73,30 @@
   </aside>
 
   <section class="site-content">
+    {#if data.headerNavigation.length}
+      <nav class="site-header-navigation" aria-label="Header navigation">
+        {#each data.headerNavigation as item}
+          <a
+            href={localHref(item.href)}
+            target={item.external ? '_blank' : undefined}
+            rel={item.external ? 'noreferrer' : undefined}
+            class:selected={isSelected(item.href)}
+            aria-current={isSelected(item.href) ? 'page' : undefined}
+          >{item.label}</a>
+        {/each}
+      </nav>
+    {/if}
     {@render children()}
   </section>
 
-  {#if config.features.footer}
+  {#if data.showFooter}
     <footer class="site-footer">
       <small>{config.author} © 2022–{currentYear}</small>
       <nav aria-label="Utility navigation">
-        {#each config.footerLinks as item}
+        {#each data.footerEntries as item}
+          <a href={localHref(item.route)}>{item.title}</a>
+        {/each}
+        {#each data.footerLinks as item}
           <a
             href={localHref(item.href)}
             target={item.external && item.href.startsWith('http') ? '_blank' : undefined}

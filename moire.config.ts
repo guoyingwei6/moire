@@ -1,9 +1,12 @@
 import siteSettings from './site.config.json';
+import rootIndex from 'virtual:moire-root-index';
+import { parseBooleanProperty } from './src/lib/config/index-note.js';
 
 export type NavigationItem = {
   label: string;
   icon: string;
   href: string;
+  external?: boolean;
 };
 
 export type FooterLink = {
@@ -219,12 +222,132 @@ const validateSettings = (value: unknown): SiteSettings => {
 };
 
 const settings = validateSettings(siteSettings);
+
+const rootSetting = (...names: string[]): string | undefined => {
+  for (const name of names) {
+    const value = rootIndex.properties[name];
+    if (value !== undefined) return value;
+  }
+  return undefined;
+};
+
+const rootRequiredText = (value: string, name: string): string => {
+  const normalized = value.trim();
+  if (!normalized) throw new Error(`Invalid content/index.md setting: ${name} must not be empty`);
+  return normalized;
+};
+
+const rootBoolean = (value: string, name: string): boolean => {
+  const parsed = parseBooleanProperty(value);
+  if (parsed === null) throw new Error(`Invalid content/index.md setting: ${name} must be yes/no or true/false`);
+  return parsed;
+};
+
+const rootColor = (value: string, name: string): string => {
+  const normalized = value.trim();
+  if (!/^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(normalized)) {
+    throw new Error(`Invalid content/index.md setting: ${name} must be a 3, 4, 6, or 8 digit hex color`);
+  }
+  return normalized;
+};
+
+const applyRootIndexSettings = (): void => {
+  const title = rootSetting('title', 'sitetitle');
+  const author = rootSetting('author');
+  const description = rootSetting('description', 'sitedescription');
+  const domain = rootSetting('domain', 'siteurl');
+  const emoji = rootSetting('emoji', 'logoemoji');
+  const rtl = rootSetting('rtl');
+  if (title !== undefined) settings.site.title = rootRequiredText(title, 'title');
+  if (author !== undefined) settings.site.author = rootRequiredText(author, 'author');
+  if (description !== undefined) settings.site.description = rootRequiredText(description, 'description');
+  if (domain !== undefined) settings.site.domain = normalizeSiteUrl(rootRequiredText(domain, 'domain'));
+  if (emoji !== undefined) settings.site.logoEmoji = rootRequiredText(emoji, 'emoji');
+  if (rtl !== undefined) settings.site.rtl = rootBoolean(rtl, 'RTL');
+
+  const twitter = rootSetting('twitter', 'twitterusername');
+  const instagram = rootSetting('instagram', 'instagramusername');
+  const github = rootSetting('github', 'githubusername');
+  const youtube = rootSetting('youtube', 'youtubelink');
+  const mastodon = rootSetting('mastodon', 'mastodonlink');
+  const email = rootSetting('email', 'publicemail');
+  if (twitter !== undefined) settings.social.twitter = normalizeProfile(twitter, 'twitter', 'twitter.com', /^[A-Za-z\d_]{1,15}$/);
+  if (instagram !== undefined) settings.social.instagram = normalizeProfile(instagram, 'instagram', 'instagram.com', /^[A-Za-z\d._]{1,30}$/);
+  if (github !== undefined) settings.social.github = normalizeProfile(github, 'github', 'github.com', /^(?!-)[A-Za-z\d-]{1,39}(?<!-)$/);
+  if (youtube !== undefined) settings.social.youtube = normalizeOptionalHttpsUrl(youtube, 'youtube');
+  if (mastodon !== undefined) settings.social.mastodon = normalizeOptionalHttpsUrl(mastodon, 'mastodon');
+  if (email !== undefined) settings.social.email = normalizeEmail(email);
+
+  const background = rootSetting('backgroundcolor');
+  const text = rootSetting('textcolor');
+  const secondary = rootSetting('secondarycolor', 'secondarytextcolor');
+  const link = rootSetting('linkcolor');
+  if (background !== undefined) settings.colors.background = rootColor(background, 'backgroundColor');
+  if (text !== undefined) settings.colors.text = rootColor(text, 'textColor');
+  if (secondary !== undefined) settings.colors.secondary = rootColor(secondary, 'secondaryTextColor');
+  if (link !== undefined) settings.colors.link = rootColor(link, 'linkColor');
+
+  const feature = (
+    key: keyof SiteSettings['features'],
+    names: string[],
+    invertedNames: string[] = []
+  ) => {
+    const direct = rootSetting(...names);
+    const inverted = rootSetting(...invertedNames);
+    if (direct !== undefined && inverted !== undefined) {
+      throw new Error(`Invalid content/index.md settings: do not set both ${names[0]} and ${invertedNames[0]}`);
+    }
+    if (direct !== undefined) settings.features[key] = rootBoolean(direct, names[0]);
+    if (inverted !== undefined) settings.features[key] = !rootBoolean(inverted, invertedNames[0]);
+  };
+
+  feature('qrCode', ['qrcode', 'showqrcode'], ['hideqrcodelink']);
+  feature('tags', ['tags', 'showtags'], ['hidetagslink']);
+  feature('archive', ['archive', 'showarchive'], ['hidearchivelink']);
+  feature('previousNext', ['previousnext', 'shownotenavigation', 'showpostnavigation']);
+  feature('footer', ['footer', 'shownotefooter']);
+  feature('metadata', ['metadata', 'shownotemetadata']);
+  feature('folderName', ['foldername', 'showbreadcrumbs', 'showfoldername', 'showfoldernameonthenotespage']);
+};
+
+applyRootIndexSettings();
 const siteUrl = settings.site.domain;
 
-const navigation = settings.navigation.filter((item) => (
+const rootNavigation = (type: 'sidebar' | 'header' | 'footer'): NavigationItem[] | null => (
+  rootIndex.menu
+    ? rootIndex.menu
+      .filter((item) => item.type === type)
+      .map((item) => ({
+        label: item.label,
+        icon: item.icon,
+        href: item.href,
+        external: !item.href.startsWith('/')
+      }))
+    : null
+);
+
+const filterFeatureLinks = (items: NavigationItem[]) => items.filter((item) => (
   (settings.features.tags || item.href !== '/tags/')
   && (settings.features.archive || item.href !== '/archive/')
 ));
+
+const navigation = filterFeatureLinks(
+  rootIndex.menu
+    ? rootNavigation('sidebar') ?? []
+    : settings.navigation
+);
+
+const headerNavigation = filterFeatureLinks(
+  rootIndex.menu
+    ? rootNavigation('header') ?? []
+    : []
+);
+
+const footerNavigation = filterFeatureLinks(
+  rootIndex.menu
+    ? rootNavigation('footer') ?? []
+    : []
+);
 
 const socialLinks = [
   ['Twitter', settings.social.twitter],
@@ -235,7 +358,8 @@ const socialLinks = [
   ['Email', settings.social.email ? `mailto:${settings.social.email.replace(/^mailto:/, '')}` : '']
 ] as const;
 
-const footerLinks: FooterLink[] = [
+const footerLinkCandidates: FooterLink[] = [
+  ...footerNavigation.map(({ label, href, external }) => ({ label, href, external })),
   ...(settings.features.tags ? [{ label: 'Tags', href: '/tags/' }] : []),
   ...(settings.features.archive ? [{ label: 'Archive', href: '/archive/' }] : []),
   { label: 'RSS feed', href: '/feed.xml' },
@@ -243,8 +367,12 @@ const footerLinks: FooterLink[] = [
     .filter(([, href]) => Boolean(href))
     .map(([label, href]) => ({ label, href, external: true })),
   ...(settings.features.qrCode ? [{ label: 'QR Code', href: '/qr/' }] : []),
-  { label: 'About me', href: '/about/about-me/' }
+  ...(rootIndex.menu ? [] : [{ label: 'About me', href: '/about/about-me/' }])
 ];
+
+const footerLinks = footerLinkCandidates.filter((item, index, items) => (
+  items.findIndex((candidate) => candidate.href === item.href) === index
+));
 
 export const config = {
   title: settings.site.title,
@@ -259,5 +387,8 @@ export const config = {
   colors: settings.colors,
   features: settings.features,
   navigation,
+  headerNavigation,
+  autoDiscoverNavigation: rootIndex.menu === null,
+  indexConfigurationIssues: rootIndex.issues,
   footerLinks
 };
