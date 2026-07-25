@@ -29,6 +29,7 @@ Ordinary notes added to an already authorized folder require no configuration ch
 - Lightweight `_` drafts: excluded from discovery, but still prerendered at their direct URL.
 - Tags, Archive, QR, RSS, Sitemap, robots and 404 pages.
 - Static HTML article bodies, safe links, fenced/inline code styling and multiple Markdown images.
+- Note-level `slug` overrides with duplicate-route and unsafe-segment build failures.
 - Empty `type` or `sidebar`, plus `header` and `footer`, in the root menu table.
 - Fail-closed root menus: a present but invalid allow-list stops the build instead of exposing automatically discovered directories.
 

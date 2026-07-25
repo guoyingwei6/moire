@@ -18,7 +18,7 @@ content/
 └── about/
 ```
 
-Folders become section pages. A folder `index` is optional. Section pages support list, timeline, feed, grid and table layouts; each title opens a permanent note page. The build also creates Tags, Archive, QR, RSS and Sitemap pages. Fenced Markdown code blocks and any number of local Markdown images are supported.
+Folders become section pages. A folder `index` is optional. Section pages support list, timeline, feed, grid and table layouts; each title opens a permanent note page. A note-level `slug` can provide a stable custom URL without moving it out of its folder. The build also creates Search, Tags, Archive, QR, RSS and Sitemap pages. Fenced Markdown code blocks and any number of local Markdown images are supported.
 
 ## Site settings
 

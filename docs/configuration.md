@@ -74,7 +74,7 @@ Core properties connected in this branch:
 
 - `pinned`: place a note first inside its folder.
 - `showInMenu`: hide an ordinary note or child folder from its folder listing without removing its direct URL.
-- `showInFooter`: add a public page to the footer.
+- `showInFooter`: add a public page to the footer and remove it from automatic collection listings. An explicit root-menu row remains explicit.
 - `showChildren`: show or hide a collection's child listing.
 - `showNestedNotes`: include descendants rather than only direct children.
 - `sortBy`: `create`, `update` or `title`.
@@ -82,6 +82,7 @@ Core properties connected in this branch:
 - `previewProps`: comma-separated metadata keys displayed in folder previews/table columns.
 - `showBreadcrumbs`, `showNoteNavigation`, `showNoteFooter`, `showNoteMetadata`.
 - `date`: override the displayed/ordering creation date; `tags`: comma-separated tags merged with hashtag lines.
+- `slug`: replace an ordinary note's filename-derived URL with one safe segment inside the same folder, for example `stable-note`. Values may use Unicode letters and numbers plus dots, underscores, tildes and hyphens. Empty values, collection `index` notes and other URL punctuation stop the build.
 
 Identity and collection controls such as `pinned`, `showInMenu`, `showInFooter`, `showChildren`, `sortBy`, `layout` and `previewProps` are local to that note/index. Visual note settings such as breadcrumbs and metadata visibility inherit.
 

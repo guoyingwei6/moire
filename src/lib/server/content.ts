@@ -23,8 +23,8 @@ import {
   isMenuVisible,
   isUnderscoreDraft,
   nearestExistingParentRoute,
-  publicRouteSegment,
-  publicTitle
+  publicTitle,
+  routeFromContentSource
 } from '$lib/server/content-policy.js';
 import { isSafeLinkHref } from '$lib/server/safe-link.js';
 import { toListingEntry, toSearchEntries } from '$lib/server/content-projection.js';
@@ -144,21 +144,6 @@ function normalizeSegments(pathname: string): string {
     stack.push(segment);
   }
   return `/${stack.join('/')}`;
-}
-
-function routeFromSource(sourcePath: string): { route: string; kind: ContentRecord['kind'] } {
-  const relative = sourcePath.replace(/^\/content\//, '').replace(/\.md$/i, '');
-  const segments = relative.split('/').filter(Boolean);
-  const isIndex = segments.at(-1)?.toLowerCase() === 'index';
-
-  if (isIndex) {
-    segments.pop();
-  } else if (segments.length) {
-    segments[segments.length - 1] = publicRouteSegment(segments.at(-1) ?? '', sourcePath);
-  }
-  const route = segments.length ? `/${segments.join('/')}/` : '/';
-  const kind = route === '/' ? 'home' : isIndex ? 'section' : 'post';
-  return { route, kind };
 }
 
 function parentRouteFor(route: string, kind: ContentRecord['kind']): string | null {
@@ -303,7 +288,7 @@ function buildDrafts(): DraftRecord[] {
       ...parseListProperty(noteConfiguration.properties.tags),
       ...inlineTags
     ])];
-    const { route, kind } = routeFromSource(sourcePath);
+    const { route, kind } = routeFromContentSource(sourcePath, noteConfiguration.properties.slug);
     const date = noteConfiguration.properties.date ?? metadata.date ?? metadata.created;
 
     return {
