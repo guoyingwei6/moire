@@ -1,13 +1,13 @@
 <script lang="ts">
   import { base } from '$app/paths';
-  import type { ContentLayout, ContentSummary } from '$lib/content';
+  import type { ContentLayout, ContentListingEntry } from '$lib/content';
 
   let {
     entries,
     layout = 'list',
     previewProps = []
   }: {
-    entries: ContentSummary[];
+    entries: ContentListingEntry[];
     layout?: ContentLayout;
     previewProps?: string[];
   } = $props();
@@ -20,7 +20,34 @@
 </script>
 
 {#if entries.length}
-  {#if layout === 'table'}
+  {#if layout === 'feed'}
+    <div class="section-list feed">
+      {#each entries as entry}
+        <article class="section-list-item section-feed-item">
+          <header class="section-list-heading">
+            <h2>
+              <a href={href(entry.route)}>
+                {#if entry.options.pinned}<span class="pin" aria-label="Pinned">📌</span>{/if}{entry.title}
+              </a>
+            </h2>
+            {#if entry.created}<time datetime={entry.created}>{displayDate(entry.created)}</time>{/if}
+          </header>
+          {#if entry.html}
+            <div class="markdown-content section-feed-content">{@html entry.html}</div>
+          {/if}
+          {#if previewProps.length}
+            <dl class="preview-properties">
+              {#each previewProps as property}
+                {#if entry.properties[property]}
+                  <div><dt>{propertyLabel(property)}</dt><dd>{entry.properties[property]}</dd></div>
+                {/if}
+              {/each}
+            </dl>
+          {/if}
+        </article>
+      {/each}
+    </div>
+  {:else if layout === 'table'}
     <div class="section-table-wrap">
       <table class="section-table">
         <thead>
@@ -49,7 +76,6 @@
     <div
       class="section-list"
       class:timeline={layout === 'timeline'}
-      class:feed={layout === 'feed'}
       class:grid={layout === 'grid'}
     >
       {#each entries as entry}
@@ -58,7 +84,7 @@
             <span>{#if entry.options.pinned}<span class="pin" aria-label="Pinned">📌</span>{/if}{entry.title}</span>
             {#if entry.created}<time datetime={entry.created}>{displayDate(entry.created)}</time>{/if}
           </div>
-          {#if (layout === 'feed' || layout === 'grid') && entry.summary}
+          {#if layout === 'grid' && entry.summary}
             <p>{entry.summary}</p>
           {/if}
           {#if previewProps.length}

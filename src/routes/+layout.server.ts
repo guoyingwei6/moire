@@ -10,6 +10,7 @@ const UTILITY_ROUTES = new Set([
   '/qr/',
   '/robots.txt',
   '/rss.xml',
+  '/search/',
   '/sitemap.xml',
   '/tags/'
 ]);

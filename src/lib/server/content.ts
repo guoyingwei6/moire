@@ -2,9 +2,11 @@ import { base } from '$app/paths';
 import { Marked, Renderer } from 'marked';
 import type {
   ArchiveGroup,
+  ContentListingEntry,
   ContentLayout,
   ContentOptions,
   ContentRecord,
+  SearchEntry,
   ContentSort,
   ContentSummary,
   TagGroup
@@ -25,6 +27,7 @@ import {
   publicTitle
 } from '$lib/server/content-policy.js';
 import { isSafeLinkHref } from '$lib/server/safe-link.js';
+import { toListingEntry, toSearchEntries } from '$lib/server/content-projection.js';
 import { config } from '../../../moire.config';
 
 const markdownModules = import.meta.glob('/content/**/*.md', {
@@ -45,6 +48,7 @@ const RESERVED_ROUTES = new Set([
   '/qr/',
   '/robots.txt/',
   '/rss.xml/',
+  '/search/',
   '/sitemap.xml/',
   '/tags/'
 ]);
@@ -198,6 +202,21 @@ function stripMarkdown(markdown: string): string {
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/<[^>]+>/g, ' ')
     .replace(/[#>*_~`|\[\]-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function searchableText(markdown: string): string {
+  return markdown
+    .replace(/```[^\r\n]*\r?\n([\s\S]*?)```/g, ' $1 ')
+    .replace(/~~~[^\r\n]*\r?\n([\s\S]*?)~~~/g, ' $1 ')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, ' $1 ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/^\s{0,3}(?:#{1,6}|>|[-+*]|\d+[.)])\s+/gm, '')
+    .replace(/[*_~|\[\]]/g, ' ')
+    .replace(/\\([\\`*{}\[\]()#+.!_>-])/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -416,9 +435,12 @@ function contentOptions(
   };
 }
 
+const searchTextByRoute = new Map<string, string>();
+
 function buildRecords(): ContentRecord[] {
   const drafts = buildDrafts();
   drafts.push(...implicitSections(drafts));
+  searchTextByRoute.clear();
 
   const routes = new Map<string, string>();
   for (const draft of drafts) {
@@ -450,6 +472,7 @@ function buildRecords(): ContentRecord[] {
   return drafts.map((draft) => {
     const wordCount = countWords(draft.body);
     const properties = effectiveFor(draft);
+    searchTextByRoute.set(draft.route, searchableText(draft.body));
     return {
       route: draft.route,
       kind: draft.kind,
@@ -511,7 +534,7 @@ export function getRecordSummary(route: string | null): ContentSummary | null {
   return record ? asSummary(record) : null;
 }
 
-export function getSectionEntries(route: string): ContentSummary[] {
+export function getSectionEntries(route: string, layout: ContentLayout = 'list'): ContentListingEntry[] {
   const section = getRecord(route);
   const nested = section?.options.showNestedNotes ?? false;
   return records
@@ -521,7 +544,11 @@ export function getSectionEntries(route: string): ContentSummary[] {
       && (nested ? record.route.startsWith(route) && record.route !== route : record.parentRoute === route)
     ))
     .sort((left, right) => compareContent(section?.options.sortBy ?? 'create', left, right))
-    .map(asSummary);
+    .map((record) => toListingEntry(record, layout) as ContentListingEntry);
+}
+
+export function getSearchEntries(): SearchEntry[] {
+  return toSearchEntries(records, searchTextByRoute, hrefWithBase) as SearchEntry[];
 }
 
 export function getPostNeighbors(record: ContentRecord): { previous: ContentSummary | null; next: ContentSummary | null } {
@@ -609,6 +636,7 @@ export function getAllPublicRoutes(): string[] {
     '/tags/',
     ...getTagGroups().map((group) => `/tags/${encodeURIComponent(group.slug)}/`),
     '/archive/',
+    '/search/',
     '/qr/',
     '/feed.xml',
     '/sitemap.xml'

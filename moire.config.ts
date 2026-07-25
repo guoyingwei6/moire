@@ -366,6 +366,7 @@ const aboutNavigation = [
 
 const footerLinkCandidates: FooterLink[] = [
   ...footerNavigation.map(({ label, href, external }) => ({ label, href, external })),
+  { label: 'Search', href: '/search/' },
   ...(settings.features.tags ? [{ label: 'Tags', href: '/tags/' }] : []),
   ...(settings.features.archive ? [{ label: 'Archive', href: '/archive/' }] : []),
   { label: 'RSS feed', href: '/feed.xml' },

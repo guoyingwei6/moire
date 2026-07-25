@@ -1,6 +1,6 @@
 <script lang="ts">
   import { base } from '$app/paths';
-  import type { ContentRecord, ContentSummary } from '$lib/content';
+  import type { ContentListingEntry, ContentRecord, ContentSummary } from '$lib/content';
   import { config } from '../../../../moire.config';
   import SectionListing from './SectionListing.svelte';
 
@@ -12,7 +12,7 @@
     next = null
   }: {
     record: ContentRecord;
-    entries?: ContentSummary[];
+    entries?: ContentListingEntry[];
     folder?: ContentSummary | null;
     previous?: ContentSummary | null;
     next?: ContentSummary | null;

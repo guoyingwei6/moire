@@ -48,6 +48,18 @@ assert.match(
 	'expected a folder without index.md to have a prerendered section page'
 );
 
+const searchPath = path.join(buildDirectory, 'search', 'index.html');
+const searchHtml = await readFile(searchPath, 'utf8');
+assert.match(searchHtml, /<h1>GYW(?:&#39;|')s Website \(search\)<\/h1>/, 'expected a prerendered Search page');
+assert.match(searchHtml, /id="site-search"/, 'the Search page must contain its keyboard-accessible search input');
+assert.match(searchHtml, /Type a word or tag to search public notes\./, 'the Search page must prerender its empty-query state');
+assert.match(indexHtml, /href="[^\"]*search\/"[^>]*>Search<\/a>/, 'the site footer must expose the Search page');
+assert.match(
+	searchHtml,
+	new RegExp(`${expectedBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/blog\\/mac-os-setting-preferences\\/`),
+	'prerendered Search data must contain a base-path-safe permanent note URL'
+);
+
 if (expectedBase) {
 	for (const file of htmlFiles) {
 		const html = await readFile(file, 'utf8');

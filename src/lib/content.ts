@@ -38,6 +38,21 @@ export type ContentRecord = ContentSummary & {
   readingMinutes: number;
 };
 
+export type ContentListingEntry = ContentSummary & {
+  html?: string;
+};
+
+export type SearchEntry = {
+  route: string;
+  href: string;
+  title: string;
+  text: string;
+  summary: string;
+  tags: string[];
+  kind: ContentKind;
+  created: string | null;
+};
+
 export type ArchiveGroup = {
   key: string;
   label: string;

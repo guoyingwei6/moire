@@ -43,7 +43,8 @@ a:hover {
 }
 
 a:focus-visible,
-button:focus-visible {
+button:focus-visible,
+input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -372,7 +373,7 @@ button:focus-visible {
   line-height: 1.2;
 }
 
-.section-list-item p {
+.section-list.grid .section-list-item > p {
   margin: 0.45rem 0 0;
   color: var(--secondary);
   font-size: 0.875rem;
@@ -400,6 +401,17 @@ button:focus-visible {
 
 .section-list.feed .section-list-item {
   padding: 1rem 0;
+}
+
+.section-feed-item .section-list-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.section-feed-content {
+  margin-top: 1rem;
 }
 
 .section-list.grid {
@@ -475,6 +487,108 @@ button:focus-visible {
 
 .empty-state {
   color: var(--secondary);
+}
+
+.search-form {
+  margin-bottom: 0.75rem;
+}
+
+.search-form label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.search-control {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-control input {
+  min-width: 0;
+  flex: 1;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.search-control input::placeholder {
+  color: var(--secondary);
+  opacity: 0.75;
+}
+
+.search-control input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-control button {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.search-status {
+  min-height: 1.3rem;
+  margin: 0 0 0.5rem;
+  color: var(--secondary);
+  font-size: 0.875rem;
+}
+
+.search-results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-results > li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.search-result-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.search-result-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.search-result-heading time {
+  flex: none;
+  color: var(--secondary);
+  font-size: 0.75rem;
+}
+
+.search-results > li > p {
+  margin: 0.4rem 0 0;
+  color: var(--secondary);
+  font-size: 0.875rem;
+}
+
+.search-results ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  color: var(--accent);
+  font-size: 0.75rem;
+  list-style: none;
 }
 
 .post-metadata {

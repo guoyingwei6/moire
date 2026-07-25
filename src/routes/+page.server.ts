@@ -5,7 +5,7 @@ export const load: PageServerLoad = () => {
   const record = getHome();
   return {
     record,
-    entries: record.options.showChildren ? getSectionEntries('/') : [],
+    entries: record.options.showChildren ? getSectionEntries('/', record.options.layout) : [],
     folder: null,
     previous: null,
     next: null
