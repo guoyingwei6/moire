@@ -56,9 +56,9 @@ button:focus-visible {
   grid-template-areas:
     "sidebar content"
     "sidebar footer";
-  width: 100%;
+  width: min(calc(100% - 1rem), 60rem);
   min-height: 100vh;
-  margin: 0;
+  margin: 0 auto;
   padding: 0.5rem;
   color: var(--text);
 }
