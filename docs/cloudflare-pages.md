@@ -24,8 +24,8 @@ deployment slot.
 - Build command: `pnpm build`
 - Build output directory: `build`
 - Root directory: repository root
-- Node.js: `20`
-- pnpm: `9`
+- Node.js: `22.22.2`
+- pnpm: `9.15.9`
 - `VITE_SITE_URL`: `https://moires.guoyingwei.top`
 - `BASE_PATH`: unset
 
