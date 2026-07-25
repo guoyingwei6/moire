@@ -4,16 +4,16 @@ updated: 2026-07-24
 ---
 # GYW's Website
 
-| menu | link | type | source | path |
-| --- | --- | --- | --- | --- |
-| 🏠 Home | / | | | |
-| 📒 Blog | /blog/ | | MacOS setting preferences | blog |
-| 🎞️ Photo | /photo/ | | Campus Sunset | photo |
-| 🎧 Music | /music/ | | Music | music |
-| 📺 Video | /video/ | | Video | video |
-| 🏷️ Tags | /tags/ | | | |
-| 🧰 Archive | /archive/ | | | |
-| 🧑‍💻 About | /about/about-me/ | footer | About Me | about |
+| menu | link | type |
+| --- | --- | --- |
+| 🏠 Home | / | |
+| 📒 Blog | /blog/ | |
+| 🎞️ Photo | /photo/ | |
+| 🎧 Music | /music/ | |
+| 📺 Video | /video/ | |
+| 🏷️ Tags | /tags/ | |
+| 🧰 Archive | /archive/ | |
+| 🧑‍💻 About | /about/about-me/ | |
 
 | name | value |
 | --- | --- |

@@ -1,7 +1,8 @@
 /**
  * Montaigne-compatible configuration tables embedded in an Apple Note.
  *
- * A root note may contain one menu/link/type/source/path table. Every note may
+ * A root note may contain one menu/link/type table. Legacy extra columns are
+ * preserved for compatibility but are not required by the website. Every note may
  * contain one or more name/value tables. Recognised tables are removed from
  * the rendered body, while arbitrary name/value properties are preserved for
  * the content graph to interpret or display later.
@@ -13,6 +14,7 @@
  */
 
 const MENU_TYPES = new Set(['sidebar', 'header', 'footer']);
+const FILE_ENDPOINTS = new Set(['/feed.xml', '/robots.txt', '/rss.xml', '/sitemap.xml']);
 const EMOJI_PREFIX = /^((?:\p{Extended_Pictographic})(?:\uFE0F|\p{Emoji_Modifier}|\u200D\p{Extended_Pictographic}\uFE0F?)*)\s*(.*)$/u;
 
 /** @param {string} value */
@@ -200,13 +202,12 @@ function unwrapMarkdownHref(value) {
 function parseMenuHref(value) {
   const href = unwrapMarkdownHref(value);
   if (href.startsWith('/')) {
-    if (href.startsWith('//') || href.includes('\\') || /[\s?#]/.test(href)) return null;
+    if (/\/{2,}/.test(href) || href.includes('\\') || /[\s?#]/.test(href)) return null;
     const segments = href.split('/').filter(Boolean);
     if (segments.some((segment) => segment === '.' || segment === '..')) return null;
     if (href === '/') return '/';
     const normalized = `/${segments.join('/')}`;
-    const lastSegment = segments.at(-1) ?? '';
-    return /\.[a-z\d][a-z\d._-]*$/i.test(lastSegment) ? normalized : `${normalized}/`;
+    return FILE_ENDPOINTS.has(normalized) ? normalized : `${normalized}/`;
   }
 
   let url;

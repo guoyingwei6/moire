@@ -358,6 +358,12 @@ const socialLinks = [
   ['Email', settings.social.email ? `mailto:${settings.social.email.replace(/^mailto:/, '')}` : '']
 ] as const;
 
+const aboutNavigation = [
+  ...navigation,
+  ...headerNavigation,
+  ...footerNavigation
+].find((item) => item.href === '/about/' || item.href.startsWith('/about/'));
+
 const footerLinkCandidates: FooterLink[] = [
   ...footerNavigation.map(({ label, href, external }) => ({ label, href, external })),
   ...(settings.features.tags ? [{ label: 'Tags', href: '/tags/' }] : []),
@@ -367,7 +373,11 @@ const footerLinkCandidates: FooterLink[] = [
     .filter(([, href]) => Boolean(href))
     .map(([label, href]) => ({ label, href, external: true })),
   ...(settings.features.qrCode ? [{ label: 'QR Code', href: '/qr/' }] : []),
-  ...(rootIndex.menu ? [] : [{ label: 'About me', href: '/about/about-me/' }])
+  ...(aboutNavigation
+    ? [{ label: 'About me', href: aboutNavigation.href, external: aboutNavigation.external }]
+    : rootIndex.menu
+      ? []
+      : [{ label: 'About me', href: '/about/about-me/' }])
 ];
 
 const footerLinks = footerLinkCandidates.filter((item, index, items) => (

@@ -9,21 +9,25 @@ GitHub Actions YAML is intentionally not a settings database. The workflow only 
 Add this table to the root `index` note:
 
 ```markdown
-| menu | link | type | source | path |
-| --- | --- | --- | --- | --- |
-| 🏠 Home | / | | | |
-| 📒 Blog | /blog/ | | MacOS setting preferences | blog |
-| 🎞️ Photo | /photo/ | | Campus Sunset | photo |
-| 🏷️ Tags | /tags/ | | | |
-| 🧰 Archive | /archive/ | | | |
-| About | /about/about-me/ | footer | About Me | about |
+| menu | link | type |
+| --- | --- | --- |
+| 🏠 Home | / | |
+| 📒 Blog | /blog/ | |
+| 🎞️ Photo | /photo/ | |
+| 🏷️ Tags | /tags/ | |
+| 🧰 Archive | /archive/ | |
+| About | /about/about-me/ | |
 ```
 
 - `menu` is the visible label. An initial emoji becomes its icon; a bullet is used when no emoji is present.
 - `link` accepts a safe site-local path or a credential-free HTTPS URL.
-- An empty `type` means Sidebar. `header` puts the item in the top navigation. `footer` is retained for compatibility with older Montaigne index tables (including this site's original table). New pages can also enter the footer through `showInFooter` metadata.
-- `source` is Moire's iOS-only extension. Enter the exact plain-text title of one uniquely titled note in the folder that the row authorizes for publication. The exporter first uses Notes' supported `Name contains` search, then keeps exact-title matches and requires exactly one. The website ignores this column. Home, Tags, Archive and external virtual links leave it empty.
-- `path` is the safe repository directory below `content/`, for example `blog` or `projects/field-notes`. Every row with a non-empty `source` must also provide an explicit `path`; the exporter does not guess it from the URL or Notes folder name. The website parses but does not display or execute it. This does not make iOS capable of discovering Notes descendants.
+- An empty `type` means Sidebar. `header` puts the item in the top navigation. `footer` is retained for compatibility with older Montaigne index tables. This site's public About target is shown in the Sidebar and is also mirrored into the footer as `About me`; new pages can enter the footer through `showInFooter` metadata.
+
+The same three columns also form the iPhone publication allow-list. For each safe local content link, the exporter removes the leading emoji and normalizes the remaining menu label as the Apple Notes folder name. The local link supplies the repository route. The label must match exactly one path segment after normalization, so `About` plus `/about/about-me/` maps the Notes folder `About` to `content/about/`, while `Field Notes` plus `/projects/field-notes/` maps to `content/projects/field-notes/`.
+
+Home, Tags, Archive, Search, QR and XML/text endpoints are generated routes and are not treated as Notes folders. HTTPS links are navigation only. No `source` or `path` columns, anchor notes, folder-level `index` notes or Shortcut edits are required.
+
+Because iOS exposes only a note's direct folder display name, the publication namespace must not contain another Notes folder with the same normalized name outside the selected public tree. This is an explicit owner constraint. The exporter also compares the global matching-note count with a dynamic exact-FolderEntity query and stops if it observes more than one non-empty folder with that name. It never silently merges ambiguous folders.
 
 When a valid root menu table exists, it is authoritative: only its rows appear in Sidebar/Header navigation. This is the requested visual publication allow-list. Notes already present in Git remain directly reachable, just like Montaigne drafts, but they are not automatically inserted into the navigation. If there is no menu table, `site.config.json` plus automatic folder discovery is used for backward compatibility. If a menu table exists but is invalid, the build stops instead of falling back open.
 

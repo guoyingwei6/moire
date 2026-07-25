@@ -37,6 +37,8 @@ assert.equal(
 assert.doesNotMatch(indexHtml, /<th>menu<\/th>/i, 'the root menu configuration table must not render as page content');
 assert.doesNotMatch(indexHtml, /<th>name<\/th>\s*<th>value<\/th>/i, 'name/value configuration must not render as page content');
 assert.doesNotMatch(indexHtml, /class="section-list/, 'showChildren=no should keep the home page focused on its own content');
+assert.match(indexHtml, /<span>About<\/span>/, 'the root index should place About in the Sidebar');
+assert.match(indexHtml, />About me<\/a>/, 'the public About destination should remain available in the footer');
 
 const implicitSectionPath = path.join(buildDirectory, 'about', 'index.html');
 const implicitSectionHtml = await readFile(implicitSectionPath, 'utf8');

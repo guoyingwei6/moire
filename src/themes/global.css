@@ -56,9 +56,9 @@ button:focus-visible {
   grid-template-areas:
     "sidebar content"
     "sidebar footer";
-  width: min(calc(100% - 1rem), 60rem);
+  width: 100%;
   min-height: 100vh;
-  margin: 0 auto;
+  margin: 0;
   padding: 0.5rem;
   color: var(--text);
 }
@@ -118,9 +118,9 @@ button:focus-visible {
   display: flex;
   gap: 0.1rem;
   align-items: baseline;
-  padding: 0 0.5rem 0.55rem;
+  padding: 0 0.5rem 0.5rem;
   color: var(--secondary);
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .site-navigation a.selected {
@@ -139,10 +139,11 @@ button:focus-visible {
 }
 
 .site-content > h1 {
+  max-width: none;
   margin: 0 0 1rem;
   font-size: 1.75rem;
   font-weight: 400;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .site-header-navigation {
@@ -185,7 +186,7 @@ button:focus-visible {
 .markdown-content {
   max-width: 40rem;
   overflow-wrap: anywhere;
-  line-height: 1.5;
+  line-height: 1.15;
   white-space: normal;
 }
 
@@ -246,6 +247,10 @@ button:focus-visible {
   width: 40rem;
   aspect-ratio: 4 / 3;
   object-fit: cover;
+}
+
+.home-article > p:has(> img:only-child) {
+  margin-bottom: 3rem;
 }
 
 .markdown-content blockquote {

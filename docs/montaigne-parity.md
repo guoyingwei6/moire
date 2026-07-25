@@ -11,12 +11,13 @@ Moire cannot use Montaigne's private service account. Its iPhone-safe substitute
 ```text
 one fixed public root FolderEntity
   -> exactly one root note titled index
-  -> one source anchor title per public Collection row
-  -> anchor Note.folder identifies the exact direct FolderEntity
-  -> path selects the destination below content/
+  -> existing menu | link | type rows form the allow-list
+  -> normalized menu label matches a direct Folder display name
+  -> local link selects the destination below content/
+  -> matching-note count must equal the selected FolderEntity note count
 ```
 
-Ordinary notes added to an already authorized folder require no configuration change. A new public Collection adds one root-index row; the five Shortcut definitions remain unchanged.
+Ordinary notes added to an already authorized folder require no configuration change. A new public Collection adds one ordinary root-index menu row; the five Shortcut definitions remain unchanged. The owner has accepted one environment constraint: no private or cross-account folder may reuse an allow-listed public folder name. An observed duplicate stops the complete batch.
 
 ## Implemented on the blog branch
 
@@ -33,12 +34,13 @@ Ordinary notes added to an already authorized folder require no configuration ch
 
 ## iPhone exporter contract
 
-The iOS Notes API exposes a note's direct FolderEntity, but not folder parents, children or complete paths. Therefore the exporter uses the root-index `source` allow-list; it never scans every private note or guesses folder ancestry.
+The iOS Notes API exposes a note's direct FolderEntity, but not folder parents, children or complete paths. The exporter therefore enumerates Notes locally, reads only direct folder display names, and exports only names explicitly authorized by the root-index menu. Global candidates are never uploaded. This is deterministic for the accepted unique-folder-name environment but is not a general proof of folder ancestry.
 
 The first safe release targets:
 
 - one-time fixed root FolderEntity and exact root `index` lookup;
-- `Name contains` candidate search followed by exact-title count `= 1` for every source anchor;
+- strict three-column menu parsing, safe local path derivation and virtual-route exclusion;
+- normalized folder-name matching followed by an exact dynamic FolderEntity count check;
 - complete-batch validation before the first GitHub request;
 - all image attachments, while accepting that their original rich-text interleaving is not reconstructed;
 - Monospaced style boundaries exported as inline or fenced Markdown code;

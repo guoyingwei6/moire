@@ -2,7 +2,7 @@
 
 This `blog` branch turns the upstream Moire memo stream into a folder-based, static blog inspired by Montaigne. GitHub stores the Markdown and images, and SvelteKit discovers the complete `content/` folder tree and builds the site.
 
-No hosted Notes account or third-party publishing server is required. GitHub cannot read Apple Notes directly, so publishing still needs an owner-controlled exporter. The website side is ready for arbitrary nested folders. The iPhone protocol uses one root `index` plus plain-text source anchors because Shortcuts does not expose Notes folder ancestry; the five copied Shortcuts are not yet approved for real upload.
+No hosted Notes account or third-party publishing server is required. GitHub cannot read Apple Notes directly, so publishing still needs an owner-controlled exporter. The website side is ready for arbitrary nested folders. The iPhone protocol uses the existing root `index` menu as its publication allow-list: the menu label identifies the Apple Notes folder and the local link identifies its destination below `content/`. It does not add per-folder anchors or `source`/`path` columns. The five copied Shortcuts are not yet approved for real upload.
 
 ## Content model
 
@@ -22,7 +22,7 @@ Folders become section pages. A folder `index` is optional. Section pages suppor
 
 ## Site settings
 
-The root [`content/index.md`](content/index.md) is the daily control surface: its tables configure Sidebar/Header navigation, the authorized iOS source folders, title, colours and display switches. Folder and note tables add inherited metadata, sorting, pinning and layouts. Prefix a note title with `_` to hide it from discovery while retaining its hard-to-guess direct page.
+The root [`content/index.md`](content/index.md) is the daily control surface: its ordinary `menu | link | type` table configures Sidebar/Header navigation and doubles as the iOS publication allow-list. Its settings table controls the title, colours and display switches. Folder and note tables add inherited metadata, sorting, pinning and layouts. Prefix a note title with `_` to hide it from discovery while retaining its hard-to-guess direct page.
 
 [`site.config.json`](site.config.json) remains the validated technical fallback and holds social defaults. GitHub Actions YAML is only the build-and-deploy recipe; it is not the settings database.
 
