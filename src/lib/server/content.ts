@@ -1,5 +1,4 @@
 import { base } from '$app/paths';
-import { Marked, Renderer } from 'marked';
 import type {
   ArchiveGroup,
   ContentListingEntry,
@@ -26,8 +25,9 @@ import {
   publicTitle,
   routeFromContentSource
 } from '$lib/server/content-policy.js';
-import { isSafeLinkHref } from '$lib/server/safe-link.js';
+import { buildAliasEntries } from '$lib/server/aliases.js';
 import { toListingEntry, toSearchEntries } from '$lib/server/content-projection.js';
+import { renderMarkdownDocument } from '$lib/server/markdown.js';
 import { config } from '../../../moire.config';
 
 const markdownModules = import.meta.glob('/content/**/*.md', {
@@ -68,15 +68,6 @@ type DraftRecord = {
   hidden: boolean;
   localProperties: Record<string, string>;
 };
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
 
 function parseFrontmatter(raw: string): { metadata: Frontmatter; body: string } {
   const match = raw.match(/^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/);
@@ -240,36 +231,6 @@ function resolveAssetHref(href: string, sourcePath: string): string {
   const assetUrl = assetModules[assetPath];
   if (!assetUrl) throw new Error(`Missing local asset ${href} referenced by ${sourcePath}`);
   return assetUrl;
-}
-
-function renderMarkdown(markdown: string, sourcePath: string): string {
-  const renderer = new Renderer();
-  const renderImage = renderer.image;
-  const renderLink = renderer.link;
-
-  renderer.image = function (token) {
-    const href = resolveAssetHref(token.href, sourcePath);
-    if (!href) return '';
-    return renderImage.call(this, { ...token, href });
-  };
-
-  renderer.link = function (token) {
-    if (!isSafeLinkHref(token.href)) {
-      return escapeHtml(token.text || token.href);
-    }
-    const href = token.href.startsWith('/') ? hrefWithBase(token.href) : token.href;
-    return renderLink.call(this, { ...token, href });
-  };
-
-  renderer.html = (token) => escapeHtml(token.text);
-
-  const marked = new Marked({
-    breaks: true,
-    gfm: true,
-    renderer
-  });
-
-  return String(marked.parse(markdown));
 }
 
 function buildDrafts(): DraftRecord[] {
@@ -457,6 +418,12 @@ function buildRecords(): ContentRecord[] {
   return drafts.map((draft) => {
     const wordCount = countWords(draft.body);
     const properties = effectiveFor(draft);
+    const showTableOfContents = Boolean(draft.sourcePath) && booleanOption(
+      properties,
+      ['showtableofcontents'],
+      true,
+      draft.sourcePath
+    );
     searchTextByRoute.set(draft.route, searchableText(draft.body));
     return {
       route: draft.route,
@@ -464,7 +431,14 @@ function buildRecords(): ContentRecord[] {
       sourcePath: draft.sourcePath || null,
       title: draft.title,
       summary: summarize(draft.body),
-      html: draft.sourcePath ? renderMarkdown(draft.body, draft.sourcePath) : '',
+      html: draft.sourcePath
+        ? renderMarkdownDocument(draft.body, {
+            sourcePath: draft.sourcePath,
+            resolveImageHref: (href) => resolveAssetHref(href, draft.sourcePath),
+            resolveRootHref: hrefWithBase,
+            showTableOfContents
+          })
+        : '',
       created: draft.created,
       updated: draft.updated,
       tags: draft.tags,
@@ -497,6 +471,11 @@ function compareContent(
 
 const records = buildRecords();
 const recordsByRoute = new Map(records.map((record) => [record.route, record]));
+const aliasEntries = buildAliasEntries(records);
+const aliasesByRoute = new Map(aliasEntries.map((entry) => [
+  entry.route.normalize('NFC').toLocaleLowerCase(),
+  entry.target
+]));
 
 function findRecord(route: string): ContentRecord | null {
   const normalized = route === '/' ? '/' : `/${route.split('/').filter(Boolean).join('/')}/`;
@@ -511,6 +490,11 @@ export function getHome(): ContentRecord {
 
 export function getRecord(route: string): ContentRecord | null {
   return findRecord(route);
+}
+
+export function getAliasTarget(route: string): string | null {
+  const normalized = route === '/' ? '/' : `/${route.split('/').filter(Boolean).join('/')}/`;
+  return aliasesByRoute.get(normalized.normalize('NFC').toLocaleLowerCase()) ?? null;
 }
 
 export function getRecordSummary(route: string | null): ContentSummary | null {
@@ -556,9 +540,10 @@ export function getPostNeighbors(record: ContentRecord): { previous: ContentSumm
 }
 
 export function getCatchAllEntries(): { path: string }[] {
-  return records
-    .filter((record) => record.route !== '/')
-    .map((record) => ({ path: record.route.split('/').filter(Boolean).join('/') }));
+  return [
+    ...records.filter((record) => record.route !== '/').map((record) => record.route),
+    ...aliasEntries.map((entry) => entry.route)
+  ].map((route) => ({ path: route.split('/').filter(Boolean).join('/') }));
 }
 
 export function getPosts(): ContentRecord[] {

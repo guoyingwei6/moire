@@ -83,6 +83,7 @@ Core properties connected in this branch:
 - `showBreadcrumbs`, `showNoteNavigation`, `showNoteFooter`, `showNoteMetadata`.
 - `date`: override the displayed/ordering creation date; `tags`: comma-separated tags merged with hashtag lines.
 - `slug`: replace an ordinary note's filename-derived URL with one safe segment inside the same folder, for example `stable-note`. Values may use Unicode letters and numbers plus dots, underscores, tildes and hyphens. Empty values, collection `index` notes and other URL punctuation stop the build.
+- `aliases`: add comma-separated alternative URLs for a note. A bare value such as `old-title` creates a sibling URL; an absolute value such as `/old/blog/title/` creates that site-local URL. Each alias becomes a static permanent redirect to the canonical note. External URLs, generated endpoints, unsafe segments and collisions stop the build. Montaigne documents the property but not its exact list grammar; this explicit grammar keeps the GitHub-only result deterministic.
 
 Identity and collection controls such as `pinned`, `showInMenu`, `showInFooter`, `showChildren`, `sortBy`, `layout` and `previewProps` are local to that note/index. Visual note settings such as breadcrumbs and metadata visibility inherit.
 

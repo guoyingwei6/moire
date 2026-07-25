@@ -1,6 +1,7 @@
 <script lang="ts">
   import { base } from '$app/paths';
   import type { ContentListingEntry, ContentRecord, ContentSummary } from '$lib/content';
+  import { feedDiscovery } from '$lib/feed-policy.js';
   import { config } from '../../../../moire.config';
   import SectionListing from './SectionListing.svelte';
 
@@ -21,6 +22,8 @@
   const href = (route: string) => `${base}${route}` || '/';
   const canonical = $derived(`${config.url.replace(/\/$/, '')}${record.route === '/' ? '/' : record.route}`);
   const displayTitle = $derived(record.kind === 'home' ? config.title : record.title);
+  const feed = $derived(feedDiscovery(record, folder, config.title));
+  const feedUrl = $derived(feed ? `${config.url.replace(/\/$/, '')}${feed.route}` : '');
   const pageTitle = $derived(record.kind === 'home' ? config.title : `${record.title} | ${config.title}`);
   const displayDate = (value: string) => new Intl.DateTimeFormat('en', {
     month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
@@ -31,6 +34,9 @@
   <title>{pageTitle}</title>
   <meta name="description" content={record.summary || config.description} />
   <link rel="canonical" href={canonical} />
+  {#if feed}
+    <link rel="alternate" type="application/rss+xml" title={`${feed.title} RSS feed`} href={feedUrl} />
+  {/if}
   <meta property="og:type" content={record.kind === 'post' ? 'article' : 'website'} />
   <meta property="og:url" content={canonical} />
   <meta property="og:title" content={displayTitle} />

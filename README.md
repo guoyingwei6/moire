@@ -18,7 +18,7 @@ content/
 └── about/
 ```
 
-Folders become section pages. A folder `index` is optional. Section pages support list, timeline, feed, grid and table layouts; each title opens a permanent note page. A note-level `slug` can provide a stable custom URL without moving it out of its folder. The build also creates Search, Tags, Archive, QR, RSS and Sitemap pages. Fenced Markdown code blocks and any number of local Markdown images are supported.
+Folders become section pages. A folder `index` is optional. Section pages support list, timeline, feed, grid and table layouts; each title opens a permanent note page. A note-level `slug` can provide a stable custom URL without moving it out of its folder, while `aliases` preserve old URLs as static redirects. The build also creates Search, Tags, Archive, QR, root and per-Collection RSS, and Sitemap pages. Fenced Markdown code blocks, footnotes, automatic heading tables of contents and any number of local Markdown images are supported.
 
 ## Site settings
 
@@ -26,7 +26,7 @@ The root [`content/index.md`](content/index.md) is the daily control surface: it
 
 [`site.config.json`](site.config.json) remains the validated technical fallback and holds social defaults. GitHub Actions YAML is only the build-and-deploy recipe; it is not the settings database.
 
-See [`docs/configuration.md`](docs/configuration.md) for every field, [`docs/apple-notes-github-sync.md`](docs/apple-notes-github-sync.md) for the Notes-to-GitHub content protocol, and [`docs/montaigne-parity.md`](docs/montaigne-parity.md) for the audited feature-parity boundary.
+See [`docs/configuration.md`](docs/configuration.md) for every field, [`docs/apple-notes-github-sync.md`](docs/apple-notes-github-sync.md) for the Notes-to-GitHub content protocol, [`docs/publish-manifest.md`](docs/publish-manifest.md) for deletion/rename ownership and retry safety, [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md) for the isolated `blog` deployment, and [`docs/montaigne-parity.md`](docs/montaigne-parity.md) for the audited feature-parity boundary.
 
 ## Local development
 

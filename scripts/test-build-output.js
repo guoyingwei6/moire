@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const buildDirectory = fileURLToPath(new URL('../build/', import.meta.url));
 const expectedBase = (process.env.BASE_PATH || '').replace(/\/+$/, '');
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 async function findHtmlFiles(directory) {
 	const entries = await readdir(directory, { withFileTypes: true });
@@ -23,6 +24,52 @@ for (const endpoint of ['feed.xml', 'rss.xml', 'sitemap.xml', 'robots.txt']) {
 	const endpointStat = await stat(path.join(buildDirectory, endpoint));
 	assert(endpointStat.isFile(), `${endpoint} must be emitted as a file endpoint without a trailing slash`);
 }
+
+const collectionFeeds = [
+	['about', 'About'],
+	['blog', 'Blog'],
+	['music', 'Music'],
+	['photo', 'Photo'],
+	['video', 'Video']
+];
+for (const [route, title] of collectionFeeds) {
+	const feedPath = path.join(buildDirectory, route, 'feed.xml');
+	const rssPath = path.join(buildDirectory, route, 'rss.xml');
+	const [feedStat, rssStat, feedXml, rssXml] = await Promise.all([
+		stat(feedPath),
+		stat(rssPath),
+		readFile(feedPath, 'utf8'),
+		readFile(rssPath, 'utf8')
+	]);
+	assert(feedStat.isFile(), `${route}/feed.xml must be a static file endpoint`);
+	assert(rssStat.isFile(), `${route}/rss.xml must be a static file endpoint`);
+	assert.equal(rssXml, feedXml, `${route} feed.xml and rss.xml aliases must stay byte-identical`);
+	assert.match(feedXml, new RegExp(`<title>${title} — GYW&apos;s Website<\\/title>`));
+}
+
+const rootFeedXml = await readFile(path.join(buildDirectory, 'feed.xml'), 'utf8');
+const rootRssXml = await readFile(path.join(buildDirectory, 'rss.xml'), 'utf8');
+assert.equal(rootRssXml, rootFeedXml, 'root feed.xml and rss.xml aliases must stay byte-identical');
+assert.match(rootFeedXml, /<title>GYW&apos;s Website<\/title>/, 'root feed must retain its existing channel identity');
+const rootChannelLink = rootFeedXml.match(/<channel>[\s\S]*?<link>([^<]+)<\/link>/)?.[1];
+assert(rootChannelLink, 'root feed must expose the configured canonical site URL');
+if (process.env.VITE_SITE_URL) {
+	assert.equal(
+		rootChannelLink,
+		`${process.env.VITE_SITE_URL.replace(/\/+$/, '')}/`,
+		'deployment VITE_SITE_URL must control the canonical feed origin'
+	);
+}
+
+const blogFeedXml = await readFile(path.join(buildDirectory, 'blog', 'feed.xml'), 'utf8');
+assert.match(blogFeedXml, /<title>MacOS setting preferences<\/title>/, 'Blog feed must use the real note title');
+assert.match(
+	blogFeedXml,
+	new RegExp(`<guid>${escapeRegExp(`${rootChannelLink.replace(/\/$/, '')}/blog/mac-os-setting-preferences/`)}<\\/guid>`),
+	'Blog feed must use the configured base-path-safe permanent note URL'
+);
+const musicFeedXml = await readFile(path.join(buildDirectory, 'music', 'feed.xml'), 'utf8');
+assert.doesNotMatch(musicFeedXml, /<item>/, 'an empty public Collection must emit a valid empty feed');
 
 const indexPath = path.join(buildDirectory, 'index.html');
 const indexHtml = await readFile(indexPath, 'utf8');
@@ -48,6 +95,22 @@ assert.match(
 	'expected a folder without index.md to have a prerendered section page'
 );
 
+const headingPagePath = path.join(buildDirectory, 'blog', 'mac-os-setting-preferences', 'index.html');
+const headingPageHtml = await readFile(headingPagePath, 'utf8');
+assert.match(
+	headingPageHtml,
+	new RegExp(`<link rel="canonical" href="${escapeRegExp(`${rootChannelLink.replace(/\/$/, '')}/blog/mac-os-setting-preferences/`)}"\\s*/?>`),
+	'canonical metadata must share the configured feed origin'
+);
+assert.match(
+	headingPageHtml,
+	new RegExp(`<link rel="alternate" type="application/rss\\+xml" title="Blog RSS feed" href="${escapeRegExp(`${rootChannelLink.replace(/\/$/, '')}/blog/feed.xml`)}"\\s*/?>`),
+	'post metadata must advertise and correctly name its parent Collection feed'
+);
+assert.match(headingPageHtml, /<nav class="table-of-contents" aria-label="Table of contents">/, 'posts with H2-H6 headings need a prerendered TOC');
+assert.match(headingPageHtml, /<h2 id="01-system-preferences">/, 'Markdown headings need deterministic safe IDs');
+assert.match(headingPageHtml, /href="#01-system-preferences"/, 'TOC links must target the prerendered heading IDs');
+
 const searchPath = path.join(buildDirectory, 'search', 'index.html');
 const searchHtml = await readFile(searchPath, 'utf8');
 assert.match(searchHtml, /<h1>GYW(?:&#39;|')s Website \(search\)<\/h1>/, 'expected a prerendered Search page');
@@ -56,7 +119,7 @@ assert.match(searchHtml, /Type a word or tag to search public notes\./, 'the Sea
 assert.match(indexHtml, /href="[^\"]*search\/"[^>]*>Search<\/a>/, 'the site footer must expose the Search page');
 assert.match(
 	searchHtml,
-	new RegExp(`${expectedBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/blog\\/mac-os-setting-preferences\\/`),
+		new RegExp(`${escapeRegExp(expectedBase)}\\/blog\\/mac-os-setting-preferences\\/`),
 	'prerendered Search data must contain a base-path-safe permanent note URL'
 );
 

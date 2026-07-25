@@ -223,6 +223,11 @@ const validateSettings = (value: unknown): SiteSettings => {
 
 const settings = validateSettings(siteSettings);
 
+const deploymentSiteUrl = import.meta.env.VITE_SITE_URL?.trim();
+if (deploymentSiteUrl) {
+  settings.site.domain = normalizeSiteUrl(deploymentSiteUrl);
+}
+
 const rootSetting = (...names: string[]): string | undefined => {
   for (const name of names) {
     const value = rootIndex.properties[name];

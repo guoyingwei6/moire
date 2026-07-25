@@ -28,8 +28,12 @@ Ordinary notes added to an already authorized folder require no configuration ch
 - List, timeline, feed, grid and table Collection layouts.
 - Lightweight `_` drafts: excluded from discovery, but still prerendered at their direct URL.
 - Tags, Archive, QR, RSS, Sitemap, robots and 404 pages.
+- Root RSS aliases plus one static `feed.xml` and `rss.xml` endpoint per public Collection. Collection feeds follow `showNestedNotes`, keep the configured Pages base path in permanent links, and exclude draft, unlisted and footer-only Collections and notes.
 - Static HTML article bodies, safe links, fenced/inline code styling and multiple Markdown images.
 - Note-level `slug` overrides with duplicate-route and unsafe-segment build failures.
+- Note-level `aliases` generate static permanent redirect pages; unsafe, reserved and colliding alternatives stop the build.
+- Stable, duplicate-safe heading anchors, an accessible H2-H6 table of contents, and Markdown footnotes with return links.
+- `showTableOfContents` is inherited from the root or Collection `index`; it defaults to `yes` for notes, and the same property on one note overrides the inherited value. `no`, `false`, `0` and `off` disable it.
 - Empty `type` or `sidebar`, plus `header` and `footer`, in the root menu table.
 - Fail-closed root menus: a present but invalid allow-list stops the build instead of exposing automatically discovered directories.
 
@@ -52,11 +56,9 @@ The first safe release targets:
 
 These are static-site features and can be added directly in SvelteKit when their use becomes important:
 
-- aliases through generated redirect pages;
 - client-side full-text Search;
-- table of contents and Markdown footnotes;
 - authors, more metadata fields and richer preview cards;
-- per-Collection feeds and printable/PDF output;
+- printable/PDF output;
 - stable internal-note links once the exporter provides a durable note-ID manifest;
 - captions and same-line image galleries when the exporter preserves attachment positions.
 

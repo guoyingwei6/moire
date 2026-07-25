@@ -7,7 +7,7 @@
 		"dev": "vite dev --host",
 		"build": "vite build",
 		"preview": "vite preview",
-		"test": "node scripts/test-safe-links.js && node scripts/test-navigation.js && node scripts/test-index-note.js && node scripts/test-index-allowlist.js && node scripts/test-content-policy.js && node scripts/test-search-feed.js",
+		"test": "node scripts/test-safe-links.js && node scripts/test-navigation.js && node scripts/test-index-note.js && node scripts/test-index-allowlist.js && node scripts/test-content-policy.js && node scripts/test-search-feed.js && node scripts/test-markdown-features.js && node scripts/test-rss-feeds.js && node scripts/test-aliases.js && node scripts/test-publish-manifest.js",
 		"test:build": "node scripts/test-build-output.js",
 		"prepare": "svelte-kit sync",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

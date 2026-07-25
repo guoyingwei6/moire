@@ -211,6 +211,7 @@ input:focus-visible {
   margin: 1.5rem 0 1rem;
   font-weight: 500;
   line-height: 1.2;
+  scroll-margin-block-start: 1rem;
 }
 
 .markdown-content h2 { font-size: 1.5rem; }
@@ -234,6 +235,37 @@ input:focus-visible {
 
 .markdown-content a {
   color: var(--accent);
+}
+
+.table-of-contents {
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 2px solid var(--divider);
+  color: var(--secondary);
+  font-size: 0.875rem;
+}
+
+.table-of-contents-title {
+  margin: 0 0 0.4rem !important;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.table-of-contents ol {
+  margin: 0;
+  padding-inline-start: 1.15rem;
+}
+
+.table-of-contents ol ol {
+  margin-top: 0.2rem;
+}
+
+.table-of-contents li + li {
+  margin-top: 0.2rem;
+}
+
+.table-of-contents a {
+  color: inherit;
 }
 
 .markdown-content img {
@@ -285,6 +317,50 @@ input:focus-visible {
   background: #f1f1ef;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875em;
+}
+
+.footnotes {
+  margin-top: 2rem;
+  color: var(--secondary);
+  font-size: 0.875rem;
+}
+
+.footnotes hr {
+  width: 25%;
+  margin: 0 0 1rem;
+  border: 0;
+  border-top: 1px solid var(--divider);
+}
+
+.footnotes ol {
+  padding-inline-start: 1.5rem;
+}
+
+.footnotes li {
+  scroll-margin-block-start: 1rem;
+}
+
+.footnotes li > :last-child:not(.footnote-backlinks) {
+  margin-bottom: 0.25rem;
+}
+
+.footnote-ref {
+  scroll-margin-block-start: 1rem;
+}
+
+.footnote-ref a,
+.footnote-backref {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.footnote-ref a {
+  padding-inline: 0.1em;
+}
+
+.footnote-backlinks {
+  display: inline-flex;
+  gap: 0.35rem;
 }
 
 .markdown-content table {
