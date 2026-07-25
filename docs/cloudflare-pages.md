@@ -7,6 +7,9 @@ main -> GitHub Pages      -> https://moire.guoyingwei.top
 blog -> Cloudflare Pages -> https://moires.guoyingwei.top
 ```
 
+- Cloudflare project: `moire-blog`
+- Cloudflare fallback URL: `https://moire-blog.pages.dev`
+
 GitHub Pages remains unchanged and continues to deploy only `main`. The
 Cloudflare project connects to the same GitHub repository but sets its
 production branch to `blog`, so the two branches never compete for one Pages
