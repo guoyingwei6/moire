@@ -4,9 +4,9 @@ This branch replaces Montaigne’s hosted sync and rendering with a static GitHu
 
 ## Publication boundary
 
-The `Moire-blog` Shortcut set uses six explicit folder mappings: the public root folder for Home, plus Blog, Photo, Music, Video and About. Each mapping is selected in the Shortcut editor before the sync is unlocked. It never scans all Notes, all iCloud folders or unrelated shared folders.
+The website publication boundary is the repository's `content/` directory. It discovers Markdown files at any depth, preserves their relative directory hierarchy and generates missing folder pages. Once a new top-level directory contains at least one Markdown note, it also appears in the sidebar unless `site.config.json` already provides an override for that folder or a page inside it.
 
-This fixed mapping is deliberate. Standard Shortcuts actions do not provide a reliable, testable way to discover and recurse through an arbitrary Apple Notes folder tree. Adding another public top-level folder therefore requires a new folder filter, a destination mapping and a matching `site.config.json` navigation item.
+Apple Notes export is a separate, unresolved boundary. The five copied `Moire-blog` Shortcuts are not yet a complete or approved publishing workflow. Native Notes actions on iPhone and iPad do not expose a folder's parent or relative path and cannot recursively enumerate every descendant of one selected parent folder. A one-time parent-folder selection therefore cannot currently provide zero-configuration recursive publishing on iOS. The future exporter must either run on a Mac through the Notes scripting interface or use a different content source that exposes folder paths. Until one route is implemented and tested, this document does not claim that Apple Notes recursive sync is available.
 
 Recommended source layout:
 
@@ -34,7 +34,7 @@ content/
     └── about-me.md                  -> /about/about-me/
 ```
 
-Every directory can have an optional `index.md`. Without one, the site still creates a folder page and lists its direct children. Filenames become stable URL segments, so renaming a file changes its URL.
+Every directory can have an optional `index.md`. Without one, the site still creates a folder page and lists its direct children. Git does not store empty directories, so an empty Apple Notes folder appears only after its first public note is exported. Filenames become stable URL segments, so renaming a file changes its URL. An implicit folder page derives its display name from the exported path; add an `index` note or a `site.config.json` navigation override when an exact custom label is important.
 
 ## Markdown contract
 
@@ -60,7 +60,7 @@ This conversion is the reason some commands in the old sync rendered as code whi
 
 ## Attachments
 
-The LAB uploader exports every image returned by Apple Notes, not only the first image. Each image is converted to PNG, named by a content hash and de-duplicated in one shared media directory, for example:
+The website renderer supports every Markdown image it receives, not only the first image. A future exporter should convert every Apple Notes image to PNG, name it by a content hash and de-duplicate it in one shared media directory, for example:
 
 ```text
 content/media/7f36f93a.png
@@ -72,22 +72,24 @@ Section notes use a relative path from their folder:
 ![](../media/7f36f93a.png)
 ```
 
-The root `content/index.md` uses `./media/7f36f93a.png` instead. The current LAB sync appends the resulting image lines to the end of the note in the order returned by Shortcuts. It does not preserve the original interleaving of text and images inside Apple Notes. This is an explicit limitation, not a rendering limit in SvelteKit; the site can render any number of Markdown images once they are present.
+The root `content/index.md` uses `./media/7f36f93a.png` instead. The unfinished LAB design appends the resulting image lines to the end of the note in the order returned by Shortcuts; it does not preserve the original interleaving of text and images inside Apple Notes. This is a prototype limitation, not a rendering limit in SvelteKit. It must be retested as part of whichever export route is selected.
 
 ## GitHub write path
 
 The Shortcut can call GitHub’s API directly with a fine-grained token restricted to this repository and its Contents permission. GitHub tokens cannot be restricted to only one branch, so protect `main` with a ruleset and configure the copied Shortcut to write `blog`. Store the token only in the local Shortcut or Keychain; never commit it.
 
-The current LAB candidate:
+Any future uploader must:
 
-1. stays locked until all six folder mappings have been reviewed;
-2. derives Unicode-safe slugs from note titles and detects duplicate destination paths for the complete batch before any upload action;
-3. adds `created` and `updated` frontmatter from Apple Notes;
-4. uploads every image by hash, then uploads each Markdown file to the `blog` branch through GitHub's Contents API;
-5. updates an existing file by SHA and reuses an existing image with the same hash;
-6. accepts only GitHub GET status 200/404 and PUT status 200/201, then stops with the returned GitHub message for any other status instead of silently continuing.
+1. stay locked until its public source boundary and GitHub destination have been reviewed;
+2. preserve whatever relative folder paths the selected source exposes, create Unicode-safe slugs from note titles and detect duplicate destination paths for the complete batch before any upload action;
+3. add `created` and `updated` frontmatter from Apple Notes;
+4. upload every image by hash, then upload each Markdown file to the `blog` branch through GitHub's Contents API;
+5. update an existing file by SHA and reuse an existing image with the same hash;
+6. accept only GitHub GET status 200/404 and PUT status 200/201, then stop with the returned GitHub message for any other status instead of silently continuing.
 
-It does not yet keep an export manifest, delete notes removed from Apple Notes, create one atomic Git commit for the whole batch, or restore the previous state after a mid-batch network failure. Those are later reliability improvements. Until then, review deletions in GitHub manually and rerun a failed batch after correcting the reported error.
+The currently copied five-Shortcut set does not yet satisfy this complete list and must not be treated as a working uploader.
+
+An export manifest, safe handling for notes removed from the source, one atomic Git commit for a complete batch and recovery after a mid-batch network failure remain future reliability requirements. No real publishing workflow should rely on those behaviors until they are implemented and tested.
 
 ## Deployment boundary
 

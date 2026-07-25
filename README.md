@@ -1,8 +1,8 @@
 # Moire Blog
 
-This `blog` branch turns the upstream Moire memo stream into a folder-based, static blog inspired by Montaigne. Apple Notes stays the writing app, a local Shortcut exports only the selected public folder, GitHub stores the Markdown and images, and SvelteKit builds the complete site.
+This `blog` branch turns the upstream Moire memo stream into a folder-based, static blog inspired by Montaigne. GitHub stores the Markdown and images, and SvelteKit discovers the complete `content/` folder tree and builds the site.
 
-No hosted Notes account or third-party publishing server is required. GitHub cannot read Apple Notes directly, so publishing still begins on the owner’s device.
+No hosted Notes account or third-party publishing server is required. GitHub cannot read Apple Notes directly, so publishing still needs an owner-controlled exporter. The website side is ready for arbitrary nested folders; the Apple Notes exporter is still being designed because iPhone Shortcuts do not expose Notes folder ancestry.
 
 ## Content model
 

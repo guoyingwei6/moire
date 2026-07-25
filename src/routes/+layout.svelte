@@ -5,7 +5,7 @@
   import '$themes/global.css';
   import { config } from '../../moire.config';
 
-  let { children } = $props();
+  let { data, children } = $props();
   let menuOpen = $state(false);
   const currentYear = new Date().getFullYear();
 
@@ -54,7 +54,7 @@
 
     <nav id="site-navigation" class="site-navigation">
       <ul>
-        {#each config.navigation as item}
+        {#each data.navigation as item}
           <li>
             <a
               href={localHref(item.href)}

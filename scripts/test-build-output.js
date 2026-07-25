@@ -24,6 +24,14 @@ const indexHtml = await readFile(indexPath, 'utf8');
 assert.match(indexHtml, /<main\b/, 'expected the home page to contain prerendered content');
 assert.doesNotMatch(indexHtml, /Loading\.\.\./, 'home page must not depend on a Loading shell');
 
+const implicitSectionPath = path.join(buildDirectory, 'about', 'index.html');
+const implicitSectionHtml = await readFile(implicitSectionPath, 'utf8');
+assert.match(
+	implicitSectionHtml,
+	/about-me/,
+	'expected a folder without index.md to have a prerendered section page'
+);
+
 if (expectedBase) {
 	for (const file of htmlFiles) {
 		const html = await readFile(file, 'utf8');
