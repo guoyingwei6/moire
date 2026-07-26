@@ -77,14 +77,6 @@
     <header class="memo-header">
       <h1>{memo.title}</h1>
       <time datetime={publishedAtIso}>{publishedAtLabel}</time>
-
-      {#if memo.tags.length > 0}
-        <ul class="tags" aria-label="标签">
-          {#each memo.tags as tag}
-            <li>#{tag}</li>
-          {/each}
-        </ul>
-      {/if}
     </header>
 
     <div class="memo-content">
@@ -132,23 +124,6 @@
   time {
     color: color-mix(in srgb, var(--text-color) 62%, transparent);
     font-size: 0.85rem;
-  }
-
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    margin: 1rem 0 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .tags li {
-    padding: 0.15rem 0.55rem;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--accent-color, #9a6700) 12%, transparent);
-    color: var(--accent-color, #9a6700);
-    font-size: 0.78rem;
   }
 
   .memo-content {
