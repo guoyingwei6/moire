@@ -4,12 +4,131 @@ import { config } from '../../../moire.config';
 
 export type Memo = {
   slug: string;
+  title: string;
+  excerpt: string;
   content: string;
   date: Date;
   tags: string[];
 };
 
-export async function getMemos(): Promise<Memo[]> {
+const FRONTMATTER_PATTERN = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
+const TITLE_MAX_LENGTH = 160;
+const EXCERPT_MAX_LENGTH = 240;
+
+function decodeHtmlEntities(value: string): string {
+  const namedEntities: Record<string, string> = {
+    amp: '&',
+    apos: "'",
+    gt: '>',
+    lt: '<',
+    nbsp: ' ',
+    quot: '"'
+  };
+
+  return value.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, code: string) => {
+    if (code.startsWith('#x')) {
+      const codePoint = Number.parseInt(code.slice(2), 16);
+      return Number.isNaN(codePoint) ? entity : String.fromCodePoint(codePoint);
+    }
+
+    if (code.startsWith('#')) {
+      const codePoint = Number.parseInt(code.slice(1), 10);
+      return Number.isNaN(codePoint) ? entity : String.fromCodePoint(codePoint);
+    }
+
+    return namedEntities[code.toLowerCase()] ?? entity;
+  });
+}
+
+function markdownToPlainText(markdown: string): string {
+  return decodeHtmlEntities(
+    markdown
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/```[^\n]*\n?/g, ' ')
+      .replace(/~~~[^\n]*\n?/g, ' ')
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]+)\]\[[^\]]*\]/g, '$1')
+      .replace(/^\s{0,3}(?:#{1,6}\s+|>\s*|[-+*]\s+|\d+[.)]\s+)/gm, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/[`*_~]/g, '')
+      .replace(/\\([\\`*{}\[\]()#+\-.!_>])/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
+}
+
+function truncate(value: string, maxLength: number): string {
+  const characters = Array.from(value);
+  if (characters.length <= maxLength) return value;
+  return `${ characters.slice(0, maxLength - 1).join('').trimEnd() }…`;
+}
+
+function parseFrontmatterValue(frontmatter: string, key: string): string | null {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = frontmatter.match(new RegExp(`^${ escapedKey }[ \\t]*:[ \\t]*(.*)$`, 'mi'));
+  if (!match) return null;
+
+  const value = match[1].trim();
+  if (!value) return null;
+
+  if (value.startsWith('"') && value.endsWith('"')) {
+    try {
+      const parsed = JSON.parse(value);
+      return typeof parsed === 'string' ? parsed : value.slice(1, -1);
+    } catch {
+      return value.slice(1, -1);
+    }
+  }
+
+  if (value.startsWith("'") && value.endsWith("'")) {
+    return value.slice(1, -1).replace(/''/g, "'");
+  }
+
+  return value;
+}
+
+function deriveTitle(markdown: string, frontmatterTitle: string | null, slug: string): string {
+  const explicitTitle = frontmatterTitle ? markdownToPlainText(frontmatterTitle) : '';
+  if (explicitTitle) return truncate(explicitTitle, TITLE_MAX_LENGTH);
+
+  for (const paragraph of markdown.split(/\r?\n\s*\r?\n/)) {
+    const candidate = markdownToPlainText(paragraph);
+    if (candidate) return truncate(candidate, TITLE_MAX_LENGTH);
+  }
+
+  return slug;
+}
+
+function deriveExcerpt(markdown: string, title: string): string {
+  const plainText = markdownToPlainText(markdown);
+  return truncate(plainText || title, EXCERPT_MAX_LENGTH);
+}
+
+export function removeLeadingTitleBlock(html: string, title: string): string {
+  const leadingBlock = html.match(/^\s*<(p|h[1-6])(?:\s[^>]*)?>([\s\S]*?)<\/\1>\s*/i);
+  if (!leadingBlock) return html;
+
+  const leadingText = markdownToPlainText(leadingBlock[2]);
+  return leadingText === title ? html.slice(leadingBlock[0].length) : html;
+}
+
+export function removeLeadingTagBlock(html: string): string {
+  return html.replace(
+    /^\s*<p>(?:\s*<button class="tag-link" data-tag="[^"]+">#[^<]+<\/button>\s*)+<\/p>\s*/i,
+    ''
+  );
+}
+
+function parseDate(value: string | null): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+let memoPromise: Promise<Memo[]> | null = null;
+
+async function loadMemos(): Promise<Memo[]> {
   const memoModules = import.meta.glob('/src/memos/**/*.md', { query: '?raw', import: 'default', eager: true });
   const assetModules = import.meta.glob('/src/memos/**/*.{png,jpg,jpeg,gif,webp}', { eager: true });
 
@@ -51,35 +170,22 @@ export async function getMemos(): Promise<Memo[]> {
         });
       };
 
-      const fmRegex = /^---\s*[\r\n]+([\s\S]*?)[\r\n]+---/;
-      const fmMatch = markdownString.match(fmRegex);
+      const fmMatch = markdownString.match(FRONTMATTER_PATTERN);
       let created: Date | null = null;
       let modified: Date | null = null;
+      let frontmatterTitle: string | null = null;
 
       if (fmMatch) {
         const fm = fmMatch[1];
-        markdownString = markdownString.replace(fmRegex, '').trim();
+        markdownString = markdownString.replace(FRONTMATTER_PATTERN, '').trim();
 
-        const createdMatch = fm.match(/created:\s*(.+)/);
-        if (createdMatch) {
-          const createdStr = createdMatch[1].trim();
-          try {
-            created = new Date(createdStr);
-          } catch (e) {
-            console.error(`Failed to parse created date from frontmatter for ${ slug }:`, e);
-          }
-        }
-
-        const modifiedMatch = fm.match(/modified:\s*(.+)/);
-        if (modifiedMatch) {
-          const modifiedStr = modifiedMatch[1].trim();
-          try {
-            modified = new Date(modifiedStr);
-          } catch (e) {
-            console.error(`Failed to parse modified date from frontmatter for ${ slug }:`, e);
-          }
-        }
+        created = parseDate(parseFrontmatterValue(fm, 'created'));
+        modified = parseDate(parseFrontmatterValue(fm, 'modified') ?? parseFrontmatterValue(fm, 'updated'));
+        frontmatterTitle = parseFrontmatterValue(fm, 'title');
       }
+
+      const title = deriveTitle(markdownString, frontmatterTitle, slug);
+      const excerpt = deriveExcerpt(markdownString, title);
 
       let markdown = resolveAssets(markdownString, path);
 
@@ -123,6 +229,8 @@ export async function getMemos(): Promise<Memo[]> {
 
       return {
         slug,
+        title,
+        excerpt,
         content: htmlContent,
         date,
         tags
@@ -133,4 +241,9 @@ export async function getMemos(): Promise<Memo[]> {
   memos.sort((a, b) => b.date.getTime() - a.date.getTime());
 
   return memos;
+}
+
+export function getMemos(): Promise<Memo[]> {
+  memoPromise ??= loadMemos();
+  return memoPromise;
 }

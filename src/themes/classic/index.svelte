@@ -1,6 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import { format } from 'date-fns';
+  import { base } from '$app/paths';
   import type { PageData } from '../../routes/$types';
   import { createMemoList } from '$lib/memo.svelte';
   import Heatmap from '$lib/components/Heatmap.svelte';
@@ -9,7 +10,7 @@
   const memoList = createMemoList(() => data, config);
 
   $effect(() => {
-    if (memoList.selectedTag) {
+    if (memoList.selectedTag || memoList.selectedDate) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
@@ -24,14 +25,24 @@
           <p class="text-sm text-gray-500 italic">{config.description}</p>
         </div>
 
-        <div class="flex items-center gap-3 self-end md:self-auto">
+        <div class="flex flex-wrap items-center justify-end gap-2 self-end md:self-auto">
           {#if memoList.selectedTag}
-            <button 
-              class="px-2 py-1 cursor-pointer bg-gray-50 rounded-full text-[0.8rem] font-medium hover:bg-gray-100 transition-colors"
-              style="color: var(--accent-color)"
+            <button
+              type="button"
+              class="filter-chip"
               onclick={() => memoList.selectTag(null)}
             >
               #{memoList.selectedTag} &times;
+            </button>
+          {/if}
+
+          {#if memoList.selectedDate}
+            <button
+              type="button"
+              class="filter-chip"
+              onclick={() => memoList.selectDate(memoList.selectedDate ?? '')}
+            >
+              {memoList.selectedDate} &times;
             </button>
           {/if}
         </div>
@@ -40,61 +51,48 @@
 
     {#if config.heatmap}
       <div class="mb-8 pb-8 border-b border-gray-100">
-        <Heatmap memos={data.memos} />
+        <Heatmap memos={data.memos} onSelectDate={memoList.selectDate} selectedDate={memoList.selectedDate} />
       </div>
     {/if}
 
     <div class="divide-y divide-gray-100">
       {#each memoList.visibleMemos as memo (memo.slug)}
-        <article class="py-6" id={memo.slug} in:slide>
-          <div class="text-[0.75rem] font-400 text-gray-500 mb-2">{format(memo.date, 'MMMM d, yyyy')}</div>
-          <div 
-            class=" leading-[1.8] text-gray-800
-              [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-gray-900 [&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:leading-tight
-              [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:leading-snug
-              [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:mt-4 [&_h3]:mb-2
-              [&_p]:mb-4 [&_p:last-child]:mb-0
-              [&_a]:no-underline [&_a]:hover:opacity-80
-              [&_img]:rounded-xl [&_img]:my-4 [&_img]:max-w-full [&_img]:shadow-sm
-              [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4 [&_ul]:space-y-1
-              [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-4 [&_ol]:space-y-1
-              [&_blockquote]:border-l-[3px] [&_blockquote]:border-gray-200 [&_blockquote]:pl-4 [&_blockquote]:text-gray-500 [&_blockquote]:italic [&_blockquote]:my-4
-              [&_table]:w-full [&_table]:my-4 [&_table]:text-[0.8rem]
-              [&_th]:text-left [&_th]:font-semibold [&_th]:text-gray-900 [&_th]:pb-2 [&_th]:border-b [&_th]:border-gray-200
-              [&_td]:py-2 [&_td]:border-b [&_td]:border-gray-100 [&_td]:text-gray-600
-              [&_code]:text-[0.8rem] [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:text-gray-800 [&_code]:font-mono
-              [&_pre]:bg-gray-50 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:text-[0.8rem] [&_pre]:overflow-x-auto [&_pre]:my-4 [&_pre]:border [&_pre]:border-gray-100
-              [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-gray-800
-              [&_.tag-link]:text-[0.85rem] [&_.tag-link]:mr-1 [&_.tag-link]:no-underline [&_.tag-link]:cursor-pointer [&_.tag-link]:font-medium
-            "
-            style="
-              --link-color: var(--accent-color);
-            "
-            role="presentation"
-            onclick={(e) => {
-              const target = e.target as HTMLElement;
-              if (target.classList.contains('tag-link')) {
-                  const tag = target.dataset.tag;
-                  if (tag) memoList.selectTag(tag);
-              }
-            }}
-          >
-            <!-- Inject dynamic color style for links and tags -->
-            <style>
-              .classic article a, .classic article .tag-link {
-                color: var(--accent-color);
-              }
-            </style>
-            {@html memo.content}
-          </div>
+        <article class="py-5 md:py-6" id={memo.slug} in:slide>
+          <time
+            class="block text-[0.75rem] text-gray-500 mb-1.5"
+            datetime={new Date(memo.date).toISOString()}
+          >{format(memo.date, 'MMMM d, yyyy')}</time>
+
+          <h2 class="m-0 text-[1.08rem] md:text-[1.15rem] font-semibold leading-snug tracking-[-0.01em]">
+            <a class="memo-title" href={`${base}/memo/${encodeURIComponent(memo.slug)}/`}>
+              <span>{memo.title}</span>
+              <span class="title-arrow" aria-hidden="true">→</span>
+            </a>
+          </h2>
+
+          {#if memo.tags.length > 0}
+            <ul class="memo-tags" aria-label={`Tags for ${memo.title}`}>
+              {#each memo.tags as tag}
+                <li>
+                  <button
+                    type="button"
+                    class:active={memoList.selectedTag === tag}
+                    aria-pressed={memoList.selectedTag === tag}
+                    onclick={() => memoList.selectTag(tag)}
+                  >#{tag}</button>
+                </li>
+              {/each}
+            </ul>
+          {/if}
         </article>
       {/each}
     </div>
 
     {#if memoList.visibleCount < memoList.filteredMemos.length}
       <div class="py-6 text-center">
-        <button 
-          class="text-[0.8rem] text-gray-400"
+        <button
+          type="button"
+          class="load-more"
           onclick={memoList.loadMore}
         >
           Load more...
@@ -107,3 +105,117 @@
       <p>© {new Date().getFullYear()} {config.author}, synced from Apple Notes and powered by <a href="https://moire.blog/" target="_blank" class="hover:text-gray-600 transition-colors">Moire</a></p>
     </footer>
 </div>
+
+<style>
+  .filter-chip {
+    padding: 0.25rem 0.55rem;
+    border: 0;
+    border-radius: 999px;
+    color: var(--accent-color);
+    background: #f9fafb;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: background-color 150ms ease;
+  }
+
+  .filter-chip:hover {
+    background: #f3f4f6;
+  }
+
+  .filter-chip:focus-visible,
+  .memo-title:focus-visible,
+  .memo-tags button:focus-visible,
+  .load-more:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 3px;
+  }
+
+  .memo-title {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    border-radius: 0.15rem;
+    color: #111827;
+    text-decoration: none;
+  }
+
+  .memo-title:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.2em;
+  }
+
+  .title-arrow {
+    color: var(--accent-color);
+    font-weight: 400;
+    opacity: 0;
+    transform: translateX(-0.2rem);
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+
+  .memo-title:hover .title-arrow,
+  .memo-title:focus-visible .title-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .memo-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .memo-tags button {
+    padding: 0.16rem 0.42rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    color: #6b7280;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.72rem;
+    transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
+  }
+
+  .memo-tags button:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+  }
+
+  .memo-tags button.active {
+    border-color: var(--accent-color);
+    color: #111827;
+    background: color-mix(in srgb, var(--accent-color) 18%, white);
+  }
+
+  .load-more {
+    padding: 0.35rem 0.5rem;
+    border: 0;
+    border-radius: 0.25rem;
+    color: #9ca3af;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8rem;
+  }
+
+  .load-more:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .filter-chip,
+    .title-arrow,
+    .memo-tags button {
+      transition: none;
+    }
+  }
+</style>

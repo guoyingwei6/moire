@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 export function createMemoList(getData: () => any, config: any) {
     let visibleCount = $state(config.pageSize || 20);
     let selectedTag = $state<string | null>(null);
+    let selectedDate = $state<string | null>(null);
 
     // Derived: Get all unique tags
     const allTags = $derived.by(() => {
@@ -14,11 +15,11 @@ export function createMemoList(getData: () => any, config: any) {
     });
 
     // Derived: Filter memos by tag
-    const filteredMemos = $derived(
-        selectedTag !== null
-            ? getData().memos.filter((memo: any) => memo.tags?.includes(selectedTag as string))
-            : getData().memos
-    );
+    const filteredMemos = $derived.by(() => getData().memos.filter((memo: any) => {
+        const matchesTag = selectedTag === null || memo.tags?.includes(selectedTag);
+        const matchesDate = selectedDate === null || format(new Date(memo.date), 'yyyy-MM-dd') === selectedDate;
+        return matchesTag && matchesDate;
+    }));
 
     // Derived: Slice the memos first
     const visibleMemos = $derived(filteredMemos.slice(0, visibleCount));
@@ -40,17 +41,24 @@ export function createMemoList(getData: () => any, config: any) {
 
     function selectTag(tag: string | null) {
         selectedTag = selectedTag === tag ? null : tag;
-      visibleCount = config.pageSize || 20;
+        visibleCount = config.pageSize || 20;
+    }
+
+    function selectDate(date: string) {
+        selectedDate = selectedDate === date ? null : date;
+        visibleCount = config.pageSize || 20;
     }
 
     return {
         get visibleCount() { return visibleCount },
         get selectedTag() { return selectedTag },
+        get selectedDate() { return selectedDate },
         get allTags() { return allTags },
         get filteredMemos() { return filteredMemos },
         get visibleMemos() { return visibleMemos },
         get groupedMemos() { return groupedMemos },
         loadMore,
-        selectTag
+        selectTag,
+        selectDate
     };
 }

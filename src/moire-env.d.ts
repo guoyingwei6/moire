@@ -1,1 +1,4 @@
-declare const __MOIRE_THEME__: string;
+declare module 'virtual:moire-theme' {
+  const ThemeComponent: any;
+  export default ThemeComponent;
+}

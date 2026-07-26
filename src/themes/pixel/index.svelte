@@ -13,7 +13,7 @@
   const memoList = createMemoList(() => data, config);
 
   $effect(() => {
-    if (memoList.selectedTag) {
+    if (memoList.selectedTag || memoList.selectedDate) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
@@ -65,7 +65,7 @@
 
   {#if config.heatmap}
     <div class="mb-8 border-b-2 border-dashed border-[var(--text-color)]/30 pb-4">
-      <Heatmap memos={data.memos} />
+      <Heatmap memos={data.memos} onSelectDate={memoList.selectDate} selectedDate={memoList.selectedDate} />
     </div>
   {/if}
 
