@@ -22,17 +22,49 @@
     "link": "#fa2f41"
   },
   "navigation": [
-    { "icon": "🏠", "label": "Home", "href": "/" },
-    { "icon": "📒", "label": "Blog", "href": "/blog/" },
-    { "icon": "🎞️", "label": "Photo", "href": "/photo/" },
-    { "icon": "🎧", "label": "Music", "href": "/music/" },
-    { "icon": "📺", "label": "Video", "href": "/video/" },
-    { "icon": "🏷️", "label": "Tags", "href": "/tags/" },
-    { "icon": "🧰", "label": "Archive", "href": "/archive/" },
-    { "icon": "🧑‍💻", "label": "About", "href": "/about/about-me/" }
+    {
+      "icon": "🏠",
+      "label": "Home",
+      "href": "/"
+    },
+    {
+      "icon": "📒",
+      "label": "Blog",
+      "href": "/blog/"
+    },
+    {
+      "icon": "🎞️",
+      "label": "Photo",
+      "href": "/photo/"
+    },
+    {
+      "icon": "🎧",
+      "label": "Music",
+      "href": "/music/"
+    },
+    {
+      "icon": "📺",
+      "label": "Video",
+      "href": "/video/"
+    },
+    {
+      "icon": "🏷️",
+      "label": "Tags",
+      "href": "/tags/"
+    },
+    {
+      "icon": "🧰",
+      "label": "Archive",
+      "href": "/archive/"
+    },
+    {
+      "icon": "🧑‍💻",
+      "label": "About",
+      "href": "/about/about-me/"
+    }
   ],
   "features": {
-    "qrCode": true,
+    "qrCode": false,
     "tags": true,
     "archive": true,
     "previousNext": true,
