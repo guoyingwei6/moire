@@ -83,23 +83,41 @@ const youtubeEmbed = render('[https://youtu.be/dQw4w9WgXcQ](https://youtu.be/dQw
 assert.match(youtubeEmbed, /https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ/, 'bare YouTube links should use privacy-preserving embed URLs');
 
 const photoEmbed = render('[https://photos.guoyingwei.top](https://photos.guoyingwei.top)');
-assert.match(photoEmbed, /class="link-embed link-embed-photo-site"/, 'the personal photo site should render as a preview card');
+assert.match(photoEmbed, /class="link-embed link-embed-card link-embed-photo-site"/, 'the personal photo site should render as a preview card');
 assert.match(photoEmbed, /YingweiGuo&#39;s Photos/, 'photo preview card should include the site title');
 assert.match(photoEmbed, /https:\/\/photos\.guoyingwei\.top\/home-image/, 'photo preview card should use the site preview image');
 
 const appleMap = render('[https://maps.apple.com/?ll=40.025272,116.286638&q=%E5%9B%BD%E5%AE%B6%E5%86%9C%E4%B8%9A%E5%9B%BE%E4%B9%A6%E9%A6%86&t=m](https://maps.apple.com/?ll=40.025272,116.286638&q=%E5%9B%BD%E5%AE%B6%E5%86%9C%E4%B8%9A%E5%9B%BE%E4%B9%A6%E9%A6%86&t=m)');
-assert.match(appleMap, /class="link-embed link-embed-map link-embed-apple-map"/, 'Apple Maps links should render as map cards');
+assert.match(appleMap, /class="link-embed link-embed-card link-embed-map link-embed-apple-map"/, 'Apple Maps links should render as map cards');
 assert.match(appleMap, /国家农业图书馆/, 'Apple Maps cards should decode q labels');
 assert.match(appleMap, /40\.025272,116\.286638/, 'Apple Maps cards should show coordinates when available');
 
 const googleMap = render('[https://www.google.com/maps/place/Beijing/@39.904211,116.407395,10z](https://www.google.com/maps/place/Beijing/@39.904211,116.407395,10z)');
-assert.match(googleMap, /class="link-embed link-embed-map link-embed-google-map"/, 'Google Maps links should render as map cards');
+assert.match(googleMap, /class="link-embed link-embed-card link-embed-map link-embed-google-map"/, 'Google Maps links should render as map cards');
 assert.match(googleMap, /Beijing/, 'Google Maps cards should use the path place label');
+
+const bilibili = render('[https://www.bilibili.com/video/BV1xx411c7mD](https://www.bilibili.com/video/BV1xx411c7mD)');
+assert.match(bilibili, /class="link-embed link-embed-card link-embed-service link-embed-bilibili"/, 'Bilibili bare links should render as service cards');
+assert.match(bilibili, /Bilibili video BV1xx411c7mD/);
+
+const xiaohongshu = render('[https://www.xiaohongshu.com/explore/65abcdef](https://www.xiaohongshu.com/explore/65abcdef)');
+assert.match(xiaohongshu, /class="link-embed link-embed-card link-embed-service link-embed-xiaohongshu"/, 'Xiaohongshu bare links should render as service cards');
+assert.match(xiaohongshu, /Xiaohongshu note 65abcdef/);
+
+const github = render('[https://github.com/guoyingwei6/moire](https://github.com/guoyingwei6/moire)');
+assert.match(github, /class="link-embed link-embed-card link-embed-service link-embed-github"/, 'GitHub repository bare links should render as service cards');
+assert.match(github, /guoyingwei6\/moire/);
+
+const doi = render('[https://doi.org/10.1038/s41586-020-2649-2](https://doi.org/10.1038/s41586-020-2649-2)');
+assert.match(doi, /class="link-embed link-embed-card link-embed-service link-embed-doi"/, 'DOI bare links should render as service cards');
+assert.match(doi, /10.1038\/s41586-020-2649-2/);
 
 const labelledMusic = render('[listen](https://embed.music.apple.com/cn/album/marry-you/576670451?i=576670463)');
 assert.doesNotMatch(labelledMusic, /link-embed-apple-music/, 'labelled media links should stay ordinary links');
 const labelledMap = render('[open map](https://maps.apple.com/?ll=40.025272,116.286638&q=Place)');
 assert.doesNotMatch(labelledMap, /link-embed-map/, 'labelled map links should stay ordinary links');
+const labelledGithub = render('[repo](https://github.com/guoyingwei6/moire)');
+assert.doesNotMatch(labelledGithub, /link-embed-github/, 'labelled GitHub links should stay ordinary links');
 
 assert.throws(
   () => render('Use[^a].\n\n[^a]: One\n[^A]: Two'),

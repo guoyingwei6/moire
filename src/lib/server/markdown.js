@@ -236,6 +236,9 @@ function renderBareLinkEmbed(href, label) {
   const mapCard = mapPreview(url);
   if (mapCard) return mapCard;
 
+  const serviceCard = servicePreview(url);
+  if (serviceCard) return serviceCard;
+
   return '';
 }
 
@@ -277,6 +280,67 @@ function mapPreview(url) {
   });
 }
 
+/** @param {URL} url */
+function servicePreview(url) {
+  const host = url.hostname.replace(/^www\./, '');
+
+  if (host === 'bilibili.com' || host.endsWith('.bilibili.com') || host === 'b23.tv') {
+    const bv = url.pathname.match(/\/video\/([^/?#]+)/i)?.[1] || '';
+    return cardEmbed({
+      className: 'link-embed-service link-embed-bilibili',
+      href: url.href,
+      eyebrow: 'Bilibili',
+      title: bv ? `Bilibili video ${decodeUrlText(bv)}` : 'Bilibili video',
+      description: 'Open video on Bilibili',
+      domain: compactHost(url.hostname),
+      icon: '▶'
+    });
+  }
+
+  if (host === 'xiaohongshu.com' || host.endsWith('.xiaohongshu.com') || host === 'xhslink.com') {
+    const noteId = url.pathname.match(/\/(?:explore|discovery\/item)\/([^/?#]+)/i)?.[1] || '';
+    return cardEmbed({
+      className: 'link-embed-service link-embed-xiaohongshu',
+      href: url.href,
+      eyebrow: 'Xiaohongshu',
+      title: noteId ? `Xiaohongshu note ${decodeUrlText(noteId)}` : 'Xiaohongshu note',
+      description: 'Open note on Xiaohongshu',
+      domain: compactHost(url.hostname),
+      icon: '小'
+    });
+  }
+
+  if (host === 'github.com') {
+    const [owner, repo] = url.pathname.split('/').filter(Boolean);
+    if (!owner || !repo) return '';
+    return cardEmbed({
+      className: 'link-embed-service link-embed-github',
+      href: url.href,
+      eyebrow: 'GitHub',
+      title: `${decodeUrlText(owner)}/${decodeUrlText(repo)}`,
+      description: 'Repository on GitHub',
+      domain: 'github.com',
+      icon: '⌘'
+    });
+  }
+
+  if (host === 'doi.org' || host === 'dx.doi.org') {
+    const doi = url.pathname.replace(/^\/+/, '');
+    if (!doi) return '';
+    return cardEmbed({
+      className: 'link-embed-service link-embed-doi',
+      href: url.href,
+      eyebrow: 'DOI',
+      title: decodeUrlText(doi),
+      description: 'Open publication record',
+      domain: 'doi.org',
+      icon: '↗'
+    });
+  }
+
+  return '';
+}
+
 /**
  * @param {{
  *   className: string,
@@ -287,15 +351,16 @@ function mapPreview(url) {
  *   domain: string,
  *   image?: string,
  *   imageAlt?: string,
- *   map?: boolean
+ *   map?: boolean,
+ *   icon?: string
  * }} options
  */
 function cardEmbed(options) {
   const preview = options.image
     ? `<img src="${escapeHtml(options.image)}" alt="${escapeHtml(options.imageAlt || '')}" loading="lazy" decoding="async">`
-    : `<span aria-hidden="true">${options.map ? '🗺️' : '↗'}</span>`;
+    : `<span aria-hidden="true">${escapeHtml(options.icon || (options.map ? '🗺️' : '↗'))}</span>`;
 
-  return `<div class="link-embed ${escapeHtml(options.className)}"><a class="link-card" href="${escapeHtml(options.href)}" target="_blank" rel="noreferrer"><span class="link-card-body"><span class="link-card-eyebrow">${escapeHtml(options.eyebrow)}</span><strong>${escapeHtml(options.title)}</strong><span>${escapeHtml(options.description)}</span><small>${escapeHtml(options.domain)}</small></span><span class="link-card-preview ${options.map ? 'link-card-map-preview' : ''}">${preview}</span></a></div>`;
+  return `<div class="link-embed link-embed-card ${escapeHtml(options.className)}"><a class="link-card" href="${escapeHtml(options.href)}" target="_blank" rel="noreferrer"><span class="link-card-body"><span class="link-card-eyebrow">${escapeHtml(options.eyebrow)}</span><strong>${escapeHtml(options.title)}</strong><span>${escapeHtml(options.description)}</span><small>${escapeHtml(options.domain)}</small></span><span class="link-card-preview ${options.map ? 'link-card-map-preview' : ''}">${preview}</span></a></div>`;
 }
 
 /** @param {URL} url */

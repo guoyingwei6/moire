@@ -461,6 +461,12 @@ input:focus-visible {
   background: #f7f7f8;
 }
 
+.link-embed-card {
+  width: min(34rem, 100%);
+  background: color-mix(in srgb, var(--accent) 8%, var(--page-bg));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 .link-embed iframe {
   display: block;
   width: 100%;
@@ -490,14 +496,25 @@ input:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  max-width: 34rem;
-  padding: 1rem;
-  color: inherit;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  color: var(--text);
   text-decoration: none;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.link-card:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow: 0 0.7rem 1.8rem color-mix(in srgb, var(--accent) 12%, transparent);
+  transform: translateY(-1px);
 }
 
 .link-card:hover strong {
-  text-decoration: underline;
+  color: var(--accent);
+  text-decoration: none;
 }
 
 .link-card-body {
@@ -508,6 +525,20 @@ input:focus-visible {
 
 .link-card-eyebrow,
 .link-card small {
+  color: var(--secondary);
+}
+
+.link-card-eyebrow {
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.link-card-body > strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.link-card-body > span:not(.link-card-eyebrow) {
   color: var(--secondary);
 }
 
@@ -526,9 +557,9 @@ input:focus-visible {
   flex: 0 0 auto;
   place-items: center;
   overflow: hidden;
-  border-radius: 0.35rem;
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--secondary);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--accent) 12%, var(--page-bg));
+  color: var(--accent);
   font-size: 2rem;
 }
 
@@ -540,15 +571,16 @@ input:focus-visible {
 
 .link-card-map-preview {
   background:
-    linear-gradient(135deg, rgba(250, 47, 65, 0.28), transparent 45%),
-    linear-gradient(45deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%),
+    radial-gradient(circle at 48% 45%, color-mix(in srgb, var(--accent) 30%, transparent) 0 0.45rem, transparent 0.5rem),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 45%),
+    linear-gradient(45deg, color-mix(in srgb, var(--secondary) 10%, transparent) 25%, transparent 25%),
+    linear-gradient(-45deg, color-mix(in srgb, var(--secondary) 10%, transparent) 25%, transparent 25%),
     var(--page-bg);
-  background-size: auto, 1.2rem 1.2rem, 1.2rem 1.2rem, auto;
+  background-size: auto, auto, 1.2rem 1.2rem, 1.2rem 1.2rem, auto;
 }
 
 .link-embed-map {
-  background: color-mix(in srgb, var(--secondary) 12%, var(--page-bg));
+  background: color-mix(in srgb, var(--accent) 9%, var(--page-bg));
 }
 
 .photo-article {
@@ -940,13 +972,19 @@ input:focus-visible {
   top: 1.25rem;
   left: 50%;
   z-index: 50;
-  max-width: min(34rem, calc(100vw - 2rem));
-  padding: 0.8rem 1rem;
-  border: 1px solid currentColor;
-  background: var(--page-bg);
+  max-width: min(28rem, calc(100vw - 2rem));
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--page-bg) 82%, white);
   color: var(--text);
-  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.14);
+  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.12);
   transform: translateX(-50%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  font-size: 0.95rem;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .settings-form {
@@ -998,7 +1036,7 @@ input:focus-visible {
 }
 
 .success {
-  color: #197b30;
+  color: color-mix(in srgb, var(--accent) 82%, #1f7a35);
 }
 
 .error {
