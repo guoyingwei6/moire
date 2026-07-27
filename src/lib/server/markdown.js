@@ -133,21 +133,11 @@ function extractFootnoteDefinitions(markdown, sourcePath) {
  */
 function createRenderer(options, nextHeadingId, headings) {
   const renderer = new Renderer();
-  const renderImage = renderer.image;
   const renderLink = renderer.link;
   const renderCode = renderer.code;
 
   renderer.image = function (token) {
-    const responsive = options.resolveImageSet?.(token.href) ?? null;
-    if (responsive) {
-      const alt = escapeHtml(token.text || '');
-      const title = token.title ? ` title="${escapeHtml(token.title)}"` : '';
-      return `<a class="image-link" href="${escapeHtml(responsive.href)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(responsive.src)}" srcset="${escapeHtml(responsive.srcset)}" sizes="${escapeHtml(responsive.sizes)}" alt="${alt}"${title} loading="lazy" decoding="async"></a>`;
-    }
-    const href = options.resolveImageHref(token.href);
-    if (!href) return '';
-    const html = renderImage.call(this, { ...token, href });
-    return html.replace('<img ', '<img loading="lazy" decoding="async" ');
+    return renderImageHtml(token, options);
   };
 
   renderer.link = function (token) {
@@ -176,6 +166,24 @@ function createRenderer(options, nextHeadingId, headings) {
 
   renderer.html = (token) => escapeHtml(token.text);
   return renderer;
+}
+
+/**
+ * @param {{ href: string, text?: string, title?: string | null }} token
+ * @param {RenderMarkdownOptions} options
+ */
+function renderImageHtml(token, options) {
+  const responsive = options.resolveImageSet?.(token.href) ?? null;
+  if (responsive) {
+    const alt = escapeHtml(token.text || '');
+    const title = token.title ? ` title="${escapeHtml(token.title)}"` : '';
+    return `<a class="image-link" href="${escapeHtml(responsive.href)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(responsive.src)}" srcset="${escapeHtml(responsive.srcset)}" sizes="${escapeHtml(responsive.sizes)}" alt="${alt}"${title} loading="lazy" decoding="async"></a>`;
+  }
+  const href = options.resolveImageHref(token.href);
+  if (!href) return '';
+  const alt = escapeHtml(token.text || '');
+  const title = token.title ? ` title="${escapeHtml(token.title)}"` : '';
+  return `<img loading="lazy" decoding="async" src="${escapeHtml(href)}" alt="${alt}"${title}>`;
 }
 
 /** @param {string} code */
@@ -544,6 +552,26 @@ export function renderMarkdownDocument(markdown, options) {
   const marked = new Marked({ breaks: true, gfm: true, renderer });
   marked.use({
     extensions: [
+      {
+        name: 'imageGallery',
+        level: 'block',
+        start(source) {
+          const index = source.indexOf('::moire-gallery');
+          return index === -1 ? undefined : index;
+        },
+        tokenizer(source) {
+          const match = source.match(/^::moire-gallery[ \t]*\n((?:!\[[^\]\r\n]*\]\([^)]+\)[ \t]*\n?)+)::[ \t]*(?:\n|$)/);
+          if (!match) return undefined;
+          const images = [...match[1].matchAll(/^!\[([^\]\r\n]*)\]\(([^)\r\n]+)\)[ \t]*$/gm)]
+            .map((image) => ({ text: image[1], href: image[2], title: null }));
+          if (images.length < 2) return undefined;
+          return { type: 'imageGallery', raw: match[0], images };
+        },
+        renderer(token) {
+          const images = /** @type {{ text: string, href: string, title: null }[]} */ (token.images);
+          return `<div class="image-gallery">${images.map((image) => renderImageHtml(image, options)).join('')}</div>\n`;
+        }
+      },
       {
         name: 'footnoteReference',
         level: 'inline',

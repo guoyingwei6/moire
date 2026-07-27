@@ -149,16 +149,10 @@ function writeNote({ note, sectionSlug, outputPath, isIndex }) {
 
 function htmlToMarkdown(html, context) {
   let text = String(html || '');
-  text = text.replace(/<img\b[^>]*\bsrc=(["'])(data:image\/([^;]+);base64,([\s\S]*?))\1[^>]*>/gi, (_, _quote, full, mime, base64) => {
-    const normalizedBase64 = String(base64).replace(/\s+/g, '');
-    const buffer = Buffer.from(normalizedBase64, 'base64');
-    const ext = extensionForImage(mime, buffer);
-    const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 32);
-    const filePath = resolve(contentDir, 'media', `${hash}.${ext}`);
-    writeManagedFile(filePath, buffer, 'media');
-    const href = relative(dirname(context.sourcePath), filePath).replaceAll('\\', '/');
-    report.media.push({ noteId: context.noteId, href, bytes: buffer.length });
-    return `\n\n![](${href})\n\n`;
+  text = convertImageOnlyDivs(text, context);
+  text = text.replace(/<img\b[^>]*\bsrc=(["'])(data:image\/([^;]+);base64,([\s\S]*?))\1[^>]*>/gi, (tag) => {
+    const markdown = imageTagToMarkdown(tag, context);
+    return markdown ? `\n\n${markdown}\n\n` : '\n\n';
   });
 
   text = text.replace(/<table\b[\s\S]*?<\/table>/gi, tableToMarkdown);
@@ -192,10 +186,43 @@ function htmlToMarkdown(html, context) {
   text = stripTags(text);
   text = decodeEntities(text);
   text = text.replace(/[ \t]+\n/g, '\n');
-  text = groupAdjacentImages(text);
   text = normalizeInlineMarkdownSyntax(text);
   text = text.replace(/\n{3,}/g, '\n\n');
   return text;
+}
+
+function convertImageOnlyDivs(html, context) {
+  return String(html || '').replace(/<div\b[^>]*>([\s\S]*?)<\/div>/gi, (full, inner) => {
+    const imageTags = [...String(inner).matchAll(/<img\b[^>]*>/gi)].map((match) => match[0]);
+    if (!imageTags.length) return full;
+    const nonImageContent = String(inner)
+      .replace(/<img\b[^>]*>/gi, '')
+      .replace(/<br\s*\/?>/gi, '')
+      .replace(/&nbsp;?/gi, ' ')
+      .replace(/\s+/g, '')
+      .trim();
+    if (nonImageContent) return full;
+    const images = imageTags.map((tag) => imageTagToMarkdown(tag, context)).filter(Boolean);
+    if (!images.length) return '\n\n';
+    if (images.length === 1) return `\n\n${images[0]}\n\n`;
+    return `\n\n::moire-gallery\n${images.join('\n')}\n::\n\n`;
+  });
+}
+
+function imageTagToMarkdown(tag, context) {
+  const match = String(tag || '').match(/<img\b[^>]*\bsrc=(["'])(data:image\/([^;]+);base64,([\s\S]*?))\1[^>]*>/i);
+  if (!match) return '';
+  const mime = match[3];
+  const base64 = match[4];
+  const normalizedBase64 = String(base64).replace(/\s+/g, '');
+  const buffer = Buffer.from(normalizedBase64, 'base64');
+  const ext = extensionForImage(mime, buffer);
+  const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 32);
+  const filePath = resolve(contentDir, 'media', `${hash}.${ext}`);
+  writeManagedFile(filePath, buffer, 'media');
+  const href = relative(dirname(context.sourcePath), filePath).replaceAll('\\', '/');
+  report.media.push({ noteId: context.noteId, href, bytes: buffer.length });
+  return `![](${href})`;
 }
 
 function convertLists(html) {
@@ -239,32 +266,6 @@ function normalizeInlineMarkdownSyntax(value) {
   return String(value || '')
     .replace(/\*\*([^*\n]+)\*\*\*\*([^*\n]+)\*\*/g, '**$1$2**')
     .replace(/\*\{4,}/g, '');
-}
-
-function groupAdjacentImages(markdown) {
-  const lines = String(markdown || '').split(/\r?\n/);
-  const output = [];
-  let run = [];
-
-  const flush = () => {
-    if (!run.length) return;
-    if (run.length === 1) output.push(run[0]);
-    else output.push(run.join(' '));
-    run = [];
-  };
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (/^!\[[^\]]*\]\([^)]+\)$/.test(trimmed)) {
-      run.push(trimmed);
-      continue;
-    }
-    if (!trimmed && run.length) continue;
-    flush();
-    output.push(line);
-  }
-  flush();
-  return output.join('\n');
 }
 
 function convertMonoBlocks(html) {

@@ -180,6 +180,7 @@ function extractTags(body: string): { body: string; tags: string[] } {
 
 function stripMarkdown(markdown: string): string {
   return markdown
+    .replace(/^::moire-gallery\s*$[\s\S]*?^::\s*$/gm, ' ')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -191,6 +192,7 @@ function stripMarkdown(markdown: string): string {
 
 function searchableText(markdown: string): string {
   return markdown
+    .replace(/^::moire-gallery\s*$[\s\S]*?^::\s*$/gm, ' ')
     .replace(/```[^\r\n]*\r?\n([\s\S]*?)```/g, ' $1 ')
     .replace(/~~~[^\r\n]*\r?\n([\s\S]*?)~~~/g, ' $1 ')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, ' $1 ')

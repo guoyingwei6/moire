@@ -11,7 +11,11 @@ updated: 2025-10-27
 
 ## My information:
 
-![](../media/309b4833d1e1ee18672f3f9145e8e24f.png) ![](../media/417a25a96c90dfe03bbdb15887da0777.jpg)
+::moire-gallery
+![](../media/309b4833d1e1ee18672f3f9145e8e24f.png)
+![](../media/417a25a96c90dfe03bbdb15887da0777.jpg)
+::
+
 | Name |  |
 | --- | --- |
 | Date of birth | 19970726 |

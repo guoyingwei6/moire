@@ -110,13 +110,17 @@ assert.match(headingPageHtml, /<pre><code>defaults write <span class="code-flag"
 
 const aboutPath = path.join(buildDirectory, 'about', 'about-me', 'index.html');
 const aboutHtml = await readFile(aboutPath, 'utf8');
-assert.match(aboutHtml, /<article class="markdown-content">[\s\S]*<p><a class="image-link"[^>]+><img[^>]+srcset=[^>]+><\/a>\s*<a class="image-link"[^>]+><img[^>]+srcset=[^>]+><\/a><\/p>/, 'consecutive Apple Notes images should stay together for two-column rendering');
+assert.match(aboutHtml, /<article class="markdown-content">[\s\S]*<div class="image-gallery"><a class="image-link"[^>]+><img[^>]+srcset=[^>]+><\/a><a class="image-link"[^>]+><img[^>]+srcset=[^>]+><\/a><\/div>/, 'same-block Apple Notes images should stay together for two-column rendering');
 assert.match(aboutHtml, /<a class="image-link" href="[^\"]+" target="_blank" rel="noreferrer"><img[^>]+srcset=/, 'responsive display images should link to the original image');
 assert.doesNotMatch(
 	aboutHtml.match(/<article class="markdown-content">[\s\S]*?<\/article>/)?.[0] ?? '',
 	/showInFooter/,
 	'name/value metadata tables must not render in article content'
 );
+
+const lifePath = path.join(buildDirectory, 'photo', 'life', 'index.html');
+const lifeHtml = await readFile(lifePath, 'utf8');
+assert.doesNotMatch(lifeHtml, /<div class="image-gallery">/, 'single-image Apple Notes blocks should remain single-column');
 
 const musicPath = path.join(buildDirectory, 'music', 'marry-you', 'index.html');
 const musicHtml = await readFile(musicPath, 'utf8');
