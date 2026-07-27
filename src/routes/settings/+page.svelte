@@ -1,5 +1,6 @@
 <script lang="ts">
   import { base } from '$app/paths';
+  import { onMount } from 'svelte';
 
   let { data } = $props();
 
@@ -20,6 +21,17 @@
     return String(value);
   };
 
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('saved') === '1') {
+      status = 'success';
+      message = '设置已保存，Cloudflare 正在重新部署。请稍后刷新页面查看生效结果。';
+    } else if (params.has('error')) {
+      status = 'error';
+      message = params.get('error') || 'Save failed.';
+    }
+  });
+
   const handleSubmit = async (event: SubmitEvent) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -38,7 +50,7 @@
         throw new Error(result.error || `Save failed with HTTP ${response.status}`);
       }
       status = 'success';
-      message = result.message || `Saved. Commit ${result.commit ?? ''} is waiting for Cloudflare deployment.`;
+      message = result.message || '设置已保存，Cloudflare 正在重新部署。请稍后刷新页面查看生效结果。';
     } catch (error) {
       status = 'error';
       message = error instanceof Error ? error.message : 'Save failed.';
@@ -54,6 +66,16 @@
 
 <article class="settings-page">
   <h1>Settings</h1>
+  {#if message}
+    <div
+      class:settings-toast={true}
+      class:success={status === 'success'}
+      class:error={status === 'error'}
+      role={status === 'error' ? 'alert' : 'status'}
+    >
+      {message}
+    </div>
+  {/if}
   <p class="settings-note">
     Site-level settings are saved to <code>site.config.json</code> on the <code>blog</code> branch.
     Apple Notes index tables remain responsible for navigation and content structure.
@@ -166,9 +188,6 @@
 
     <section>
       <button type="submit" disabled={status === 'saving'}>save</button>
-      {#if message}
-        <p class:success={status === 'success'} class:error={status === 'error'}>{message}</p>
-      {/if}
     </section>
   </form>
 

@@ -869,6 +869,20 @@ input:focus-visible {
   color: var(--secondary);
 }
 
+.settings-toast {
+  position: fixed;
+  top: 1.25rem;
+  left: 50%;
+  z-index: 50;
+  max-width: min(34rem, calc(100vw - 2rem));
+  padding: 0.8rem 1rem;
+  border: 1px solid currentColor;
+  background: var(--page-bg);
+  color: var(--text);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.14);
+  transform: translateX(-50%);
+}
+
 .settings-form {
   max-width: 42rem;
 }

@@ -14,13 +14,14 @@ export default {
 };
 
 async function saveSettings(request, env = {}) {
+  const wantsHtml = acceptsHtml(request);
   try {
     const token = env.GITHUB_TOKEN;
     const repository = env.GITHUB_REPOSITORY || DEFAULT_REPOSITORY;
     const branch = env.GITHUB_BRANCH || DEFAULT_BRANCH;
 
     if (!token) {
-      return json({ error: 'Settings API is not configured. Missing GITHUB_TOKEN.' }, 501);
+      return settingsResponse(request, wantsHtml, { error: 'Settings API is not configured. Missing GITHUB_TOKEN.' }, 501);
     }
 
     const form = await request.formData();
@@ -29,7 +30,10 @@ async function saveSettings(request, env = {}) {
     const content = `${JSON.stringify(next, null, 2)}\n`;
 
     if (content === `${JSON.stringify(current.config, null, 2)}\n`) {
-      return json({ message: 'No settings changed.', commit: current.sha });
+      return settingsResponse(request, wantsHtml, {
+        message: 'No settings changed.',
+        commit: current.sha
+      });
     }
 
     const result = await writeConfig({
@@ -41,13 +45,13 @@ async function saveSettings(request, env = {}) {
       message: 'Update site settings'
     });
 
-    return json({
-      message: 'Settings saved. Cloudflare Pages will redeploy the blog branch.',
+    return settingsResponse(request, wantsHtml, {
+      message: '设置已保存，Cloudflare 正在重新部署。请稍后刷新页面查看生效结果。',
       commit: result.commit?.sha || null
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown settings error.';
-    return json({ error: message }, 400);
+    return settingsResponse(request, wantsHtml, { error: message }, 400);
   }
 }
 
@@ -206,6 +210,23 @@ function json(body, status = 200) {
     status,
     headers: { 'content-type': 'application/json; charset=utf-8' }
   });
+}
+
+function acceptsHtml(request) {
+  const accept = request.headers.get('accept') || '';
+  return accept.includes('text/html');
+}
+
+function settingsResponse(request, wantsHtml, body, status = 200) {
+  if (!wantsHtml) return json(body, status);
+  const url = new URL('/settings/', request.url);
+  if (body.error) {
+    url.searchParams.set('error', String(body.error));
+  } else {
+    url.searchParams.set('saved', '1');
+    if (body.commit) url.searchParams.set('commit', String(body.commit));
+  }
+  return Response.redirect(url.toString(), 303);
 }
 
 function encodeBase64(value) {
