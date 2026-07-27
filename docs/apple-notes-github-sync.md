@@ -63,7 +63,14 @@ Stable identity is handled by:
 - deterministic slug generation from note titles;
 - content-hash filenames for images.
 
-No separate manifest is required for the current deployment.
+`pnpm notes:build-content` also writes two machine files:
+
+- `content/.moire-manifest.json`: SHA-256 ownership record for generated Markdown and media.
+- `content/.moire-reconcile.json`: report-only upsert/remove/relocate plan.
+
+The report is intentionally non-destructive. It can identify deleted, renamed
+or moved output paths, but the current deployment does not automatically delete
+repository content.
 
 ## Publish commands
 

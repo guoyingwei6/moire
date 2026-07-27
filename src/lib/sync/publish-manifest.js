@@ -153,6 +153,27 @@ export function planPublishReconciliation(previousInput, nextInput) {
     return existing?.kind === file.kind && existing.digest === file.digest;
   });
   const remove = (previous?.files ?? []).filter((file) => !nextByPath.has(pathKey(file.path)));
+  const upsertByDigest = new Map();
+  for (const file of upsert) {
+    const key = `${file.kind}:${file.digest}`;
+    const files = upsertByDigest.get(key) ?? [];
+    files.push(file);
+    upsertByDigest.set(key, files);
+  }
+  const relocate = [];
+  for (const file of remove) {
+    const key = `${file.kind}:${file.digest}`;
+    const candidates = upsertByDigest.get(key) ?? [];
+    const nextFile = candidates.shift();
+    if (nextFile) {
+      relocate.push({
+        from: file.path,
+        to: nextFile.path,
+        kind: file.kind,
+        digest: file.digest
+      });
+    }
+  }
 
-  return { upsert, unchanged, remove, next };
+  return { upsert, unchanged, remove, relocate, next };
 }

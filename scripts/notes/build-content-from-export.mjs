@@ -2,6 +2,11 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
+import {
+  PUBLISH_MANIFEST_PATH,
+  createPublishManifest,
+  planPublishReconciliation
+} from '../../src/lib/sync/publish-manifest.js';
 
 const args = new Map();
 for (let index = 2; index < process.argv.length; index += 1) {
@@ -17,6 +22,8 @@ const input = resolve(args.get('in') || 'notes-export/public-notes.json');
 const contentDir = resolve(args.get('content') || 'content');
 const clean = args.get('clean') === 'true';
 const ifExists = args.get('if-exists') === 'true';
+const manifestPath = resolve(contentDir, PUBLISH_MANIFEST_PATH);
+const reconcilePath = resolve(contentDir, '.moire-reconcile.json');
 if (!existsSync(input)) {
   if (ifExists) {
     console.log(JSON.stringify({ input, skipped: true, reason: 'input does not exist' }, null, 2));
@@ -30,9 +37,15 @@ const siteConfig = JSON.parse(readFileSync(resolve('site.config.json'), 'utf8'))
 const sectionSlugs = new Map(data.sections.map((section) => [section.name, slugify(section.name)]));
 const rootIndexNote = data.root.notes.find((note) => normalizedTitle(note.name) === 'index') || data.root.notes[0];
 const publicSectionSlugs = extractPublicSectionSlugs(rootIndexNote?.body, sectionSlugs);
+const previousManifest = existsSync(manifestPath)
+  ? JSON.parse(readFileSync(manifestPath, 'utf8'))
+  : null;
+const generatedFiles = new Map();
 const report = {
   input,
   contentDir,
+  manifest: relative(process.cwd(), manifestPath),
+  reconcile: relative(process.cwd(), reconcilePath),
   notes: [],
   media: [],
   skippedDrafts: [],
@@ -79,12 +92,41 @@ for (const section of data.sections) {
   }
   if (!visibleNotes.some((note) => normalizedTitle(note.name) === 'index')) {
     const title = section.name;
-    writeFileSync(
+    writeManagedFile(
       resolve(contentDir, sectionSlug, 'index.md'),
-      frontmatter({ title, created: '', updated: '' })
+      frontmatter({ title, created: '', updated: '' }),
+      'markdown'
     );
   }
 }
+
+const nextManifest = createPublishManifest(rootFingerprint(data.root), [...generatedFiles.values()]);
+const reconciliation = planPublishReconciliation(previousManifest, nextManifest);
+writeFileSync(manifestPath, `${JSON.stringify(nextManifest, null, 2)}\n`);
+writeFileSync(reconcilePath, `${JSON.stringify({
+  version: 1,
+  previousManifest: previousManifest ? relative(process.cwd(), manifestPath) : null,
+  nextManifest: relative(process.cwd(), manifestPath),
+  summary: {
+    upsert: reconciliation.upsert.length,
+    unchanged: reconciliation.unchanged.length,
+    remove: reconciliation.remove.length,
+    relocate: reconciliation.relocate.length
+  },
+  upsert: reconciliation.upsert,
+  unchanged: reconciliation.unchanged,
+  remove: reconciliation.remove,
+  relocate: reconciliation.relocate,
+  deletesApplied: false,
+  note: 'Report only. The build script never deletes repository content as a publish cleanup action.'
+}, null, 2)}\n`);
+report.reconciliation = {
+  upsert: reconciliation.upsert.length,
+  unchanged: reconciliation.unchanged.length,
+  remove: reconciliation.remove.length,
+  relocate: reconciliation.relocate.length,
+  deletesApplied: false
+};
 
 console.log(JSON.stringify(report, null, 2));
 
@@ -96,8 +138,7 @@ function writeNote({ note, sectionSlug, outputPath, isIndex }) {
   }), note.name).trim();
   const title = isIndex ? titleForIndex(sectionSlug, note.name) : note.name;
   const body = `${!sectionSlug && isIndex ? normalizeRootIndexMarkdown(markdown) : markdown}\n`;
-  mkdirSync(dirname(outputPath), { recursive: true });
-  writeFileSync(outputPath, frontmatter({ title, created: note.created, updated: note.modified }) + body);
+  writeManagedFile(outputPath, frontmatter({ title, created: note.created, updated: note.modified }) + body, 'markdown');
   report.notes.push({
     title: note.name,
     id: note.id,
@@ -114,7 +155,7 @@ function htmlToMarkdown(html, context) {
     const ext = extensionForMime(mime);
     const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 32);
     const filePath = resolve(contentDir, 'media', `${hash}.${ext}`);
-    writeFileSync(filePath, buffer);
+    writeManagedFile(filePath, buffer, 'media');
     const href = relative(dirname(context.sourcePath), filePath).replaceAll('\\', '/');
     report.media.push({ noteId: context.noteId, href, bytes: buffer.length });
     return `\n\n![](${href})\n\n`;
@@ -366,6 +407,26 @@ function yamlString(value) {
 
 function stableId(note) {
   return String(note.id || note.name).replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'note';
+}
+
+function rootFingerprint(root) {
+  return createHash('sha256')
+    .update(String(root?.id || root?.name || 'moire-public-root'))
+    .digest('hex');
+}
+
+function writeManagedFile(filePath, content, kind) {
+  mkdirSync(dirname(filePath), { recursive: true });
+  writeFileSync(filePath, content);
+  const buffer = Buffer.isBuffer(content) ? content : Buffer.from(String(content));
+  const path = relative(contentDir, filePath).replaceAll('\\', '/');
+  const digest = createHash('sha256').update(buffer).digest('hex');
+  const key = path.normalize('NFC').toLocaleLowerCase();
+  const existing = generatedFiles.get(key);
+  if (existing && (existing.kind !== kind || existing.digest !== digest || existing.path !== path)) {
+    throw new Error(`Generated file collision: ${existing.path} and ${path}`);
+  }
+  generatedFiles.set(key, { path, kind, digest });
 }
 
 function slugify(value) {

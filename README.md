@@ -116,7 +116,7 @@ Cloudflare Pages should use production branch `blog`, build command `pnpm build`
 ## Current limits
 
 - Only direct child folders of the public parent are supported.
-- Deletion/rename/move reconciliation is intentionally simple: Cloudflare rebuilds from the latest raw snapshot, but no separate manifest cleanup protocol is active yet.
+- Deletion/rename/move reconciliation is report-only. `content/.moire-manifest.json` records generated Markdown/media ownership and `content/.moire-reconcile.json` reports upsert/remove/relocate candidates, but cleanup deletion is not applied automatically.
 - The trigger is a 10-minute LaunchAgent pseudo-hook, not a real Apple Notes change event.
 
 ## License

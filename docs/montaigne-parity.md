@@ -52,7 +52,7 @@ The first safe release targets:
 - all image attachments, while accepting that their original rich-text interleaving is not reconstructed;
 - Monospaced style boundaries exported as inline or fenced Markdown code;
 - `_` notes uploaded with a leading-underscore filename so the website can apply the lightweight-draft policy;
-- GitHub upserts only; stale remote deletion and rename/move reconciliation remain unimplemented until a manifest protocol is added.
+- GitHub upserts only; stale remote deletion is still not applied automatically. The current manifest protocol records generated files and reports remove/relocate candidates for deleted, renamed or moved output paths.
 
 ## Feasible later without a hosted Notes service
 

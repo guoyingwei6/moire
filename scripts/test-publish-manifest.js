@@ -37,6 +37,14 @@ assert.deepEqual(planPublishReconciliation(previous, next), {
     { path: 'blog/rename-me.md', kind: 'markdown', digest: digest('b') },
     { path: 'media/unused.jpg', kind: 'media', digest: digest('c') }
   ],
+  relocate: [
+    {
+      from: 'blog/rename-me.md',
+      to: 'blog/renamed.md',
+      kind: 'markdown',
+      digest: digest('b')
+    }
+  ],
   next
 });
 
