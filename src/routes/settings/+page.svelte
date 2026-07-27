@@ -109,40 +109,4 @@
       </tbody>
     </table>
   </section>
-
-  <section>
-    <h2>Page metadata and effective options</h2>
-    <table class="settings-records">
-      <thead>
-        <tr>
-          <th>page</th>
-          <th>kind</th>
-          <th>metadata table</th>
-          <th>effective options</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each data.records as record}
-          <tr>
-            <td><a href={href(record.route)}>{record.title}</a><br><small>{record.route}</small></td>
-            <td>{record.kind}</td>
-            <td>
-              {#if Object.keys(record.properties).length}
-                {#each entries(record.properties) as [name, value]}
-                  <div><code>{name}</code>: {formatValue(value)}</div>
-                {/each}
-              {:else}
-                —
-              {/if}
-            </td>
-            <td>
-              {#each entries(record.options) as [name, value]}
-                <div><code>{name}</code>: {formatValue(value)}</div>
-              {/each}
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </section>
 </article>
