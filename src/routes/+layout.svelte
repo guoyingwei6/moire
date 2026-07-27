@@ -7,6 +7,7 @@
 
   let { data, children } = $props();
   let menuOpen = $state(false);
+  let lightbox = $state<{ src: string; alt: string } | null>(null);
   const currentYear = new Date().getFullYear();
 
   const localHref = (href: string) => href.startsWith('/') ? `${base}${href}` || '/' : href;
@@ -21,7 +22,31 @@
   $effect(() => {
     page.url.pathname;
     menuOpen = false;
+    lightbox = null;
   });
+
+  const openImageLightbox = (event: MouseEvent) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const link = target.closest<HTMLAnchorElement>('a.image-link');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    if (!href) return;
+    const image = link.querySelector('img');
+    event.preventDefault();
+    lightbox = {
+      src: href,
+      alt: image?.getAttribute('alt') || 'Expanded image'
+    };
+  };
+
+  const closeImageLightbox = () => {
+    lightbox = null;
+  };
+
+  const closeImageLightboxOnEscape = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') closeImageLightbox();
+  };
 </script>
 
 <svelte:head>
@@ -29,6 +54,8 @@
   <meta name="keywords" content={config.keywords} />
   <link rel="icon" href={favicon} />
 </svelte:head>
+
+<svelte:window onclick={openImageLightbox} onkeydown={closeImageLightboxOnEscape} />
 
 <main
   class="site-frame"
@@ -112,3 +139,16 @@
     </footer>
   {/if}
 </main>
+
+{#if lightbox}
+  <div
+    class="image-lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Image preview"
+  >
+    <button class="image-lightbox-backdrop" type="button" aria-label="Close image preview" onclick={closeImageLightbox}></button>
+    <button class="image-lightbox-close" type="button" aria-label="Close image preview" onclick={closeImageLightbox}>×</button>
+    <img src={lightbox.src} alt={lightbox.alt} />
+  </div>
+{/if}

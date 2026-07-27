@@ -304,6 +304,7 @@ input:focus-visible {
   display: inline-block;
   max-width: 100%;
   color: inherit;
+  cursor: zoom-in;
 }
 
 .markdown-content p:has(> img + img),
@@ -606,6 +607,62 @@ input:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgb(0 0 0 / 0.72);
+  backdrop-filter: blur(6px);
+  cursor: zoom-out;
+}
+
+.image-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-out;
+}
+
+.image-lightbox img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  max-width: min(100%, 96vw);
+  max-height: min(100%, 92vh);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.75rem;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.35);
+  cursor: default;
+}
+
+.image-lightbox-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1001;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+  font: inherit;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.image-lightbox-close:hover {
+  background: rgb(255 255 255 / 0.26);
 }
 
 .post-tags {
