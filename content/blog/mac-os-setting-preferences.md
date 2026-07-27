@@ -6,76 +6,73 @@ updated: 2025-06-11
 
 ## 01. System Preferences
 
-- Func key:
+- **Func key:**
 
-- System Preferences > Keyboard > Keyboard > Use F1, F2, etc. keys as standard function keys
+  - System Preferences > Keyboard > Keyboard > Use F1, F2, etc. keys as standard function keys
 
-- Keyboard controls:
+- **Keyboard controls:**
 
-- System Preferences > Keyboard > Shortcuts > Use keyboard navigation to move focus between controls
+  - System Preferences > Keyboard > Shortcuts > Use keyboard navigation to move focus between controls
 
-- Tab to Click:
+- **Tab to Click:**
 
-- System Preferences > Trackpad > Point & Click > Tap to click
+  - System Preferences > Trackpad > Point & Click > Tap to click
 
-- Three finger drag:
+- **Three finger drag:**
 
-- System Preferences > Accessibility > Pointer Control > Trackpad Options… > Enable dragging, three finger drag
+  - System Preferences > Accessibility > Pointer Control > Trackpad Options… > Enable dragging, three finger drag
 
-- Larger menu bar
+- **Larger menu bar**
 
-- System Preferences > Accessibility > Text > Menu bar size > Large
+  - System Preferences > Accessibility > Text > Menu bar size > Large
 
-- Show date on the menu bar:
+- **Show date on the menu bar:**
 
-- System Preferences > Date & Time > Clock > Show date
+  - System Preferences > Date & Time > Clock > Show date
 
-- Dock automatically hide:
+- **Dock automatically hide:**
 
-- System Preferences > Dock > Automatically hide and show the Dock
+  - System Preferences > Dock > Automatically hide and show the Dock
 
-- Auto switch input source:
+- **Auto switch input source:**
 
-- System Preferences > Keyboard > Input Sources > Automatically switch to a document's input source
+  - System Preferences > Keyboard > Input Sources > Automatically switch to a document's input source
 
-- Hot corners:
+- **Hot corners:**
 
-- System Preferences > Desktop & Dock > Hot Corners:
+  - System Preferences > Desktop & Dock > Hot Corners:
 
-- Left top: ⌘ Lock Screen
+    - Left top: ⌘ Lock Screen
 
-- Left bottom: Launchpad
+    - Left bottom: Launchpad
 
-- Right top: Mission control
+    - Right top: Mission control
 
-- Right bottom: Desktop
+    - Right bottom: Desktop
 
-- User name on right top corner：
+- **User name on right top corner：**
 
-- System Preferences > Control Center > Fast User Switching > Show in Menu Bar: Full Name
+  - System Preferences > Control Center > Fast User Switching > Show in Menu Bar: Full Name
 
-- Lock screen massage：
+- **Lock screen massage：**
 
-- System Preferences > Lock Screen > Show message when locked > Set…
+  - System Preferences > Lock Screen > Show message when locked > Set…
 
-- Drag a window from anywhere, not just the top bar：
-
-- CMD+CTRL+click/drag
-
-- Dock Position:
-
-- System Preferences > Dock > Position on screen: Left
-
-- Dock show time:
-
-- Launchpad customized rows and columns
-
-- Disable .DS_store file
-
-- Disable bouncing notification
+- **Drag a window from anywhere, not just the top bar：**
 
 ```
 defaults write -g NSWindowShouldDragOnGesture -bool true
+```
+
+  - CMD+CTRL+click/drag
+
+- **Dock Position:**
+
+  - System Preferences > Dock > Position on screen: Left
+
+- **Dock show time:**
+
+```
 # Set the docking time to 0.5 seconds
 defaults write com.apple.dock autohide-time-modifier -float 0.5 && killall Dock
 
@@ -87,6 +84,11 @@ defaults delete com.apple.dock autohide-time-modifier && killall Dock
 
 # Restore the default startup dock response time
 defaults delete com.apple.Dock autohide-delay && killall Dock
+```
+
+- **Launchpad customized rows and columns**
+
+```
 # Set number of columns
 defaults write com.apple.dock springboard-columns -int 7
 
@@ -102,8 +104,18 @@ defaults write com.apple.dock springboard-columns Default
 
 # Restart the Dock to take effect
 killall Dock
+```
+
+- **Disable .DS_store file**
+
+```
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true
+```
+
+- **Disable bouncing notification**
+
+```
 # Disable
 defaults write com.apple.dock no-bouncing -bool TRUE
 killall Dock
@@ -112,52 +124,47 @@ killall Dock
 defaults delete com.apple.dock no-bouncing
 ```
 
-****
-
 ## 02. System Software
 
 ### Finder
 
-- Preferences
+- **Preferences**
 
-- General -> Show these on the desktop -> Select None
+  - General -> Show these on the desktop -> Select None
 
-- I try to keep my desktop completely clean.
+    - I try to keep my desktop completely clean.
 
-- General -> New Finder windows show -> Home Folder
+  - General -> New Finder windows show -> Home Folder
 
-- I prefer to see my home folder in each new finder window instead of recent documents
+    - I prefer to see my home folder in each new finder window instead of recent documents
 
-- Advanced -> Show all filename extensions -> Yes
+  - Advanced -> Show all filename extensions -> Yes
 
-- Advanced -> Show warning before changing an extension -> No
+  - Advanced -> Show warning before changing an extension -> No
 
-- Advanced -> When performing a search -> Search the current folder
+  - Advanced -> When performing a search -> Search the current folder
 
-- View
+- **View**
 
-- Show Status Bar
+  - Show Status Bar
 
-- Show Path Bar
+  - Show Path Bar
 
-- Show Tab Bar
+  - Show Tab Bar
 
 ## 03.Third party software
 
-- Allow installation of Apps from any source
-
-- System Preferences > Privacy & Security > Security > Allow applications downloaded from: any source
-
-- HomeBrew
-
-- Battery
-
-- APP broken:
-
-- Double Wechat:
+- **Allow installation of Apps from any source**
 
 ```
 sudo spctl --master-disable
+```
+
+  - System Preferences > Privacy & Security > Security > Allow applications downloaded from: any source
+
+- HomeBrew
+
+```
 # Installing
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 # installing in China
@@ -167,8 +174,23 @@ echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
 eval "$(/opt/homebrew/bin/brew shellenv)"
 # cask
 brew install cask
+```
+
+- Battery
+
+```
 brew install --cask battery
 battery maintain 80
+```
+
+- APP broken:
+
+```
 xattr -cr /Applications/MessAuto.app
+```
+
+- Double Wechat:
+
+```
 open -n /Applications/WeChat.app/Contents/MacOS/WeChat
 ```

@@ -107,6 +107,22 @@ assert.match(
 );
 assert.doesNotMatch(headingPageHtml, /class="table-of-contents"/, 'posts should not show the automatic table of contents by default');
 assert.match(headingPageHtml, /<h2 id="01-system-preferences">/, 'Markdown headings need deterministic safe IDs');
+assert.match(headingPageHtml, /<ul>\s*<li>\s*<p><strong>Func key:<\/strong><\/p>\s*<ul>/, 'Apple Notes nested lists should remain nested after export');
+assert.match(headingPageHtml, /<pre><code>defaults write -g NSWindowShouldDragOnGesture -bool true/, 'Apple Notes mono blocks should render as fenced code blocks');
+
+const aboutPath = path.join(buildDirectory, 'about', 'about-me', 'index.html');
+const aboutHtml = await readFile(aboutPath, 'utf8');
+assert.match(aboutHtml, /<article class="markdown-content">[\s\S]*<p><img[^>]+>\s*<img[^>]+><\/p>/, 'consecutive Apple Notes images should stay together for two-column rendering');
+assert.doesNotMatch(
+	aboutHtml.match(/<article class="markdown-content">[\s\S]*?<\/article>/)?.[0] ?? '',
+	/showInFooter/,
+	'name/value metadata tables must not render in article content'
+);
+
+const musicPath = path.join(buildDirectory, 'music', 'marry-you', 'index.html');
+const musicHtml = await readFile(musicPath, 'utf8');
+assert.match(musicHtml, /class="link-embed link-embed-apple-music"/, 'Apple Music links should render as embed modules');
+assert.doesNotMatch(musicHtml, /<p>\s*<div class="link-embed/, 'embed modules should not be invalid nested block HTML');
 
 const searchPath = path.join(buildDirectory, 'search', 'index.html');
 const searchHtml = await readFile(searchPath, 'utf8');

@@ -166,26 +166,105 @@ function htmlToMarkdown(html, context) {
   text = convertInlineMono(text);
   text = text.replace(/<(h[1-6])\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, tag, body) => {
     const level = Number(tag.slice(1));
-    return `\n\n${'#'.repeat(level)} ${inlineText(body)}\n\n`;
+    const heading = inlineText(body);
+    return heading ? `\n\n${'#'.repeat(level)} ${heading}\n\n` : '\n\n';
   });
+  text = text.replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, _tag, body) => {
+    const value = inlineFormattingText(body);
+    if (value === ' ') return value;
+    return value ? `**${value}**` : '';
+  });
+  text = text.replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, _tag, body) => {
+    const value = inlineFormattingText(body);
+    if (value === ' ') return value;
+    return value ? `*${value}*` : '';
+  });
+  text = text.replace(/<a\b[^>]*\bhref=(["']?)([^"'\s>]+)\1[^>]*>([\s\S]*?)<\/a>/gi, (_, _quote, href, body) => {
+    const label = inlineText(body);
+    return safeHref(href) ? `[${label}](${href})` : label;
+  });
+  text = convertLists(text);
   text = text.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p\s*>/gi, '\n\n');
   text = text.replace(/<p\b[^>]*>/gi, '');
   text = text.replace(/<\/div\s*>/gi, '\n');
   text = text.replace(/<div\b[^>]*>/gi, '');
-  text = text.replace(/<li\b[^>]*>([\s\S]*?)<\/li>/gi, (_, body) => `\n- ${inlineText(body)}`);
-  text = text.replace(/<\/?(?:ul|ol)\b[^>]*>/gi, '\n');
-  text = text.replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, _tag, body) => `**${inlineText(body)}**`);
-  text = text.replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, _tag, body) => `*${inlineText(body)}*`);
-  text = text.replace(/<a\b[^>]*\bhref=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi, (_, _quote, href, body) => {
-    const label = inlineText(body);
-    return safeHref(href) ? `[${label}](${href})` : label;
-  });
   text = stripTags(text);
   text = decodeEntities(text);
   text = text.replace(/[ \t]+\n/g, '\n');
+  text = groupAdjacentImages(text);
+  text = normalizeInlineMarkdownSyntax(text);
   text = text.replace(/\n{3,}/g, '\n\n');
   return text;
+}
+
+function convertLists(html) {
+  const source = String(html || '');
+  const tokenPattern = /<ul\b[^>]*>|<\/ul>|<ol\b[^>]*>|<\/ol>|<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+  let output = '';
+  let cursor = 0;
+  let depth = 0;
+  let match;
+
+  while ((match = tokenPattern.exec(source)) !== null) {
+    output += source.slice(cursor, match.index);
+    const token = match[0].toLowerCase();
+    if (token.startsWith('<ul') || token.startsWith('<ol')) {
+      depth += 1;
+    } else if (token.startsWith('</ul') || token.startsWith('</ol')) {
+      depth = Math.max(0, depth - 1);
+    } else {
+      const body = listItemText(match[1]);
+      if (body) {
+        const indent = '  '.repeat(Math.max(0, depth - 1));
+        output += `\n${indent}- ${body}`;
+      }
+    }
+    cursor = match.index + match[0].length;
+  }
+
+  output += source.slice(cursor);
+  return output;
+}
+
+function listItemText(html) {
+  return normalizeInlineMarkdownSyntax(decodeEntities(stripTags(String(html || '')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/?div\b[^>]*>/gi, ' ')))
+    .replace(/\s+/g, ' ')
+    .trim());
+}
+
+function normalizeInlineMarkdownSyntax(value) {
+  return String(value || '')
+    .replace(/\*\*([^*\n]+)\*\*\*\*([^*\n]+)\*\*/g, '**$1$2**')
+    .replace(/\*\{4,}/g, '');
+}
+
+function groupAdjacentImages(markdown) {
+  const lines = String(markdown || '').split(/\r?\n/);
+  const output = [];
+  let run = [];
+
+  const flush = () => {
+    if (!run.length) return;
+    if (run.length === 1) output.push(run[0]);
+    else output.push(run.join(' '));
+    run = [];
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^!\[[^\]]*\]\([^)]+\)$/.test(trimmed)) {
+      run.push(trimmed);
+      continue;
+    }
+    if (!trimmed && run.length) continue;
+    flush();
+    output.push(line);
+  }
+  flush();
+  return output.join('\n');
 }
 
 function convertMonoBlocks(html) {
@@ -203,6 +282,7 @@ function convertMonoBlocks(html) {
       output += flushMonoLines(lines);
       output += before + divHtml;
     } else {
+      if (hasBlockSeparator(before)) output += flushMonoLines(lines);
       output += before;
       lines.push(monoLine);
     }
@@ -211,6 +291,10 @@ function convertMonoBlocks(html) {
   output += flushMonoLines(lines);
   output += html.slice(cursor);
   return output;
+}
+
+function hasBlockSeparator(html) {
+  return /<(?:ul|ol|li|h[1-6]|table)\b/i.test(String(html || ''));
 }
 
 function flushMonoLines(lines) {
@@ -285,6 +369,13 @@ function extractPublicSectionSlugs(rootHtml, availableSections) {
 
 function inlineText(html) {
   return decodeEntities(stripTags(String(html || ''))).replace(/\s+/g, ' ').trim();
+}
+
+function inlineFormattingText(html) {
+  const source = String(html || '');
+  const value = decodeEntities(stripTags(source)).replace(/\u00a0/g, ' ');
+  if (!value.trim()) return /<br\b/i.test(source) ? '' : (value ? ' ' : '');
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 function stripTags(value) {

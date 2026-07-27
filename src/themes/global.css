@@ -276,6 +276,19 @@ input:focus-visible {
   background: #df915f;
 }
 
+.markdown-content p:has(> img + img) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.markdown-content p:has(> img + img) img {
+  flex: 1 1 min(16rem, 100%);
+  min-width: 0;
+  object-fit: cover;
+}
+
 .home-article img {
   width: 40rem;
   aspect-ratio: 4 / 3;
@@ -366,18 +379,59 @@ input:focus-visible {
 .markdown-content table {
   display: block;
   width: 100%;
-  margin-bottom: 1rem;
+  margin: 0 0 2rem;
   overflow-x: auto;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .markdown-content th,
 .markdown-content td {
-  padding: 0.35rem 0.6rem;
-  border: 1px solid var(--divider);
+  padding: 0.2rem 1rem 0.2rem 0;
+  border: 0;
   text-align: start;
   vertical-align: top;
+}
+
+.markdown-content th {
+  font-weight: 700;
+}
+
+.markdown-content td:first-child,
+.markdown-content th:first-child {
+  font-weight: 700;
+}
+
+.link-embed {
+  max-width: 100%;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: #f7f7f8;
+}
+
+.link-embed iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+.link-embed-youtube {
+  aspect-ratio: 16 / 9;
+}
+
+.link-embed-youtube iframe {
+  height: 100%;
+}
+
+.link-embed-apple-music iframe {
+  height: 11rem;
+}
+
+.link-embed-spotify iframe,
+.link-embed-apple-podcast iframe,
+.link-embed-apple-tv iframe {
+  height: 22rem;
 }
 
 .photo-article {

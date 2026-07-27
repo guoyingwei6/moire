@@ -74,6 +74,17 @@ const collisionProof = render('## moire fn 1\n\nText[^a].\n\n[^a]: Footnote.');
 assert.match(collisionProof, /<h2 id="moire-fn-1">/, 'heading anchors retain their readable slug');
 assert.match(collisionProof, /id="moire:fn:1"/, 'footnotes use a namespace headings cannot produce');
 
+const embeds = render('[https://embed.music.apple.com/cn/album/marry-you/576670451?i=576670463](https://embed.music.apple.com/cn/album/marry-you/576670451?i=576670463)');
+assert.match(embeds, /class="link-embed link-embed-apple-music"/, 'bare Apple Music links should render as embeds');
+assert.match(embeds, /<iframe src="https:\/\/embed\.music\.apple\.com\/cn\/album\/marry-you\/576670451\?i=576670463"/);
+assert.doesNotMatch(embeds, /<p>\s*<div class="link-embed/, 'block embeds must not remain wrapped inside paragraphs');
+
+const youtubeEmbed = render('[https://youtu.be/dQw4w9WgXcQ](https://youtu.be/dQw4w9WgXcQ)');
+assert.match(youtubeEmbed, /https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ/, 'bare YouTube links should use privacy-preserving embed URLs');
+
+const labelledMusic = render('[listen](https://embed.music.apple.com/cn/album/marry-you/576670451?i=576670463)');
+assert.doesNotMatch(labelledMusic, /link-embed-apple-music/, 'labelled media links should stay ordinary links');
+
 assert.throws(
   () => render('Use[^a].\n\n[^a]: One\n[^A]: Two'),
   /Duplicate footnote definition/,

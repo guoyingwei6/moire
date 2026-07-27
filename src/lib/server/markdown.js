@@ -144,6 +144,8 @@ function createRenderer(options, nextHeadingId, headings) {
   renderer.link = function (token) {
     if (!isSafeLinkHref(token.href)) return this.parser.parseInline(token.tokens);
     const href = token.href.startsWith('/') ? options.resolveRootHref(token.href) : token.href;
+    const embed = renderBareLinkEmbed(href, plainTextFromTokens(token.tokens));
+    if (embed) return embed;
     return renderLink.call(this, { ...token, href });
   };
 
@@ -156,6 +158,91 @@ function createRenderer(options, nextHeadingId, headings) {
 
   renderer.html = (token) => escapeHtml(token.text);
   return renderer;
+}
+
+/**
+ * Montaigne turns supported bare media links into rich embeds. Keep this narrow:
+ * only auto-embed when the visible label is the URL itself, so ordinary labelled
+ * links keep behaving like links.
+ *
+ * @param {string} href
+ * @param {string} label
+ */
+function renderBareLinkEmbed(href, label) {
+  const url = safeUrl(href);
+  if (!url) return '';
+  if (label.trim() && normalizeUrlLabel(label) !== normalizeUrlLabel(url.href)) return '';
+
+  const youtube = youtubeEmbedUrl(url);
+  if (youtube) {
+    return `<div class="link-embed link-embed-youtube"><iframe src="${escapeHtml(youtube)}" title="YouTube video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
+  }
+
+  if (url.hostname === 'embed.music.apple.com' || url.hostname === 'music.apple.com') {
+    const embedUrl = url.hostname === 'embed.music.apple.com'
+      ? url.href
+      : `https://embed.music.apple.com${url.pathname}${url.search}`;
+    return `<div class="link-embed link-embed-apple-music"><iframe src="${escapeHtml(embedUrl)}" title="Apple Music" loading="lazy" allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"></iframe></div>`;
+  }
+
+  if (url.hostname === 'open.spotify.com') {
+    return `<div class="link-embed link-embed-spotify"><iframe src="${escapeHtml(url.href)}" title="Spotify" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe></div>`;
+  }
+
+  if (url.hostname === 'podcasts.apple.com' || url.hostname === 'embed.podcasts.apple.com') {
+    const embedUrl = url.hostname === 'embed.podcasts.apple.com'
+      ? url.href
+      : `https://embed.podcasts.apple.com${url.pathname}${url.search}`;
+    return `<div class="link-embed link-embed-apple-podcast"><iframe src="${escapeHtml(embedUrl)}" title="Apple Podcasts" loading="lazy" allow="autoplay *; encrypted-media *; fullscreen *"></iframe></div>`;
+  }
+
+  if (url.hostname === 'tv.apple.com' || url.hostname === 'embed.tv.apple.com') {
+    const embedUrl = url.hostname === 'embed.tv.apple.com'
+      ? url.href
+      : `https://embed.tv.apple.com${url.pathname}${url.search}`;
+    return `<div class="link-embed link-embed-apple-tv"><iframe src="${escapeHtml(embedUrl)}" title="Apple TV" loading="lazy" allow="autoplay *; encrypted-media *; fullscreen *"></iframe></div>`;
+  }
+
+  return '';
+}
+
+/** @param {string} value */
+function safeUrl(value) {
+  try {
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+/** @param {string} value */
+function normalizeUrlLabel(value) {
+  return value.trim().replace(/\/$/, '');
+}
+
+/** @param {URL} url */
+function youtubeEmbedUrl(url) {
+  const host = url.hostname.replace(/^www\./, '');
+  if (host === 'youtu.be') {
+    const id = url.pathname.split('/').filter(Boolean)[0];
+    return id ? `https://www.youtube-nocookie.com/embed/${escapeURIComponent(id)}` : '';
+  }
+  if (host === 'youtube.com' || host === 'm.youtube.com') {
+    const id = url.searchParams.get('v');
+    if (id) return `https://www.youtube-nocookie.com/embed/${escapeURIComponent(id)}`;
+    const shorts = url.pathname.match(/^\/shorts\/([^/?#]+)/);
+    if (shorts) return `https://www.youtube-nocookie.com/embed/${escapeURIComponent(shorts[1])}`;
+    const embed = url.pathname.match(/^\/embed\/([^/?#]+)/);
+    if (embed) return `https://www.youtube-nocookie.com/embed/${escapeURIComponent(embed[1])}`;
+  }
+  return '';
+}
+
+/** @param {string} value */
+function escapeURIComponent(value) {
+  return encodeURIComponent(value).replace(/%2F/gi, '');
 }
 
 /**
@@ -284,7 +371,12 @@ export function renderMarkdownDocument(markdown, options) {
     ]
   });
 
-  const html = String(marked.parse(body));
+  const html = unwrapBlockEmbeds(String(marked.parse(body)));
   const toc = options.showTableOfContents ? renderTableOfContents(headings) : '';
   return `${toc}${html}${footnotes.render()}`;
+}
+
+/** @param {string} html */
+function unwrapBlockEmbeds(html) {
+  return html.replace(/<p>\s*(<div class="link-embed [\s\S]*?<\/div>)\s*<\/p>/g, '$1');
 }
