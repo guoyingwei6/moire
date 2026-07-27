@@ -134,6 +134,7 @@ function createRenderer(options, nextHeadingId, headings) {
   const renderer = new Renderer();
   const renderImage = renderer.image;
   const renderLink = renderer.link;
+  const renderCode = renderer.code;
 
   renderer.image = function (token) {
     const href = options.resolveImageHref(token.href);
@@ -156,8 +157,26 @@ function createRenderer(options, nextHeadingId, headings) {
     return `<h${token.depth} id="${escapeHtml(id)}">${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`;
   };
 
+  renderer.code = function (token) {
+    const language = String(token.lang || '').trim().toLowerCase();
+    const code = String(token.text || '');
+    if (!language || ['sh', 'shell', 'bash', 'zsh'].includes(language)) {
+      return `<pre><code>${highlightShellCode(code)}</code></pre>\n`;
+    }
+    return renderCode.call(this, token);
+  };
+
   renderer.html = (token) => escapeHtml(token.text);
   return renderer;
+}
+
+/** @param {string} code */
+function highlightShellCode(code) {
+  return escapeHtml(code)
+    .replace(/(^|\s)(#[^\n]*)/g, '$1<span class="code-comment">$2</span>')
+    .replace(/(^|\s)(-{1,2}[A-Za-z][A-Za-z0-9_-]*)/g, '$1<span class="code-flag">$2</span>')
+    .replace(/\b(true|false|TRUE|FALSE|Default)\b/g, '<span class="code-literal">$1</span>')
+    .replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="code-number">$1</span>');
 }
 
 /**

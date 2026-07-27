@@ -108,7 +108,7 @@ assert.match(
 assert.doesNotMatch(headingPageHtml, /class="table-of-contents"/, 'posts should not show the automatic table of contents by default');
 assert.match(headingPageHtml, /<h2 id="01-system-preferences">/, 'Markdown headings need deterministic safe IDs');
 assert.match(headingPageHtml, /<ul>\s*<li>\s*<p><strong>Func key:<\/strong><\/p>\s*<ul>/, 'Apple Notes nested lists should remain nested after export');
-assert.match(headingPageHtml, /<pre><code>defaults write -g NSWindowShouldDragOnGesture -bool true/, 'Apple Notes mono blocks should render as fenced code blocks');
+assert.match(headingPageHtml, /<pre><code>defaults write <span class="code-flag">-g<\/span> NSWindowShouldDragOnGesture/, 'Apple Notes mono blocks should render as highlighted fenced code blocks');
 
 const aboutPath = path.join(buildDirectory, 'about', 'about-me', 'index.html');
 const aboutHtml = await readFile(aboutPath, 'utf8');

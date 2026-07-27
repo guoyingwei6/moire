@@ -187,7 +187,7 @@ input:focus-visible {
 .markdown-content {
   max-width: 40rem;
   overflow-wrap: anywhere;
-  line-height: 1.15;
+  line-height: 1.22;
   white-space: normal;
 }
 
@@ -201,6 +201,10 @@ input:focus-visible {
 
 .markdown-content p {
   margin: 0 0 1rem;
+}
+
+.markdown-content li > p {
+  margin: 0;
 }
 
 .markdown-content h2,
@@ -223,14 +227,35 @@ input:focus-visible {
 .markdown-content ul,
 .markdown-content ol {
   margin: 0 0 1rem;
-  padding-inline-start: 2rem;
+  padding-inline-start: 1.6rem;
+}
+
+.markdown-content li {
+  margin: 0.22rem 0;
+}
+
+.markdown-content li::marker {
+  color: var(--text);
+}
+
+.markdown-content ul {
+  list-style-type: disc;
+}
+
+.markdown-content ul ul {
+  list-style-type: circle;
+}
+
+.markdown-content ul ul ul {
+  list-style-type: square;
 }
 
 .markdown-content ul ul,
 .markdown-content ol ol,
 .markdown-content ul ol,
 .markdown-content ol ul {
-  margin-bottom: 0;
+  margin: 0.15rem 0 0.35rem;
+  padding-inline-start: 1.45rem;
 }
 
 .markdown-content a {
@@ -308,20 +333,34 @@ input:focus-visible {
 .markdown-content pre {
   position: relative;
   max-width: 100%;
-  margin: 0 0 1rem;
+  margin: 1rem 0 1.1rem;
   overflow-x: auto;
-  border-radius: 0.5rem;
-  background: #f1f1ef;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 0.28rem;
+  background: #f5f7fb;
 }
 
 .markdown-content pre code {
   display: block;
-  padding: 1rem 1.5rem 1rem 1rem;
+  padding: 0.85rem 1.25rem 0.85rem 1rem;
   color: #393a34;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.875rem;
-  line-height: 1.55;
+  font-size: 0.95rem;
+  line-height: 1.45;
   white-space: pre;
+}
+
+.code-comment {
+  color: #5f6875;
+}
+
+.code-flag {
+  color: #d14;
+}
+
+.code-number,
+.code-literal {
+  color: #06c;
 }
 
 .markdown-content :not(pre) > code {
