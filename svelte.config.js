@@ -6,6 +6,14 @@ const base = process.env.BASE_PATH || '';
 const config = {
   kit: {
     adapter: adapter({ fallback: '404.html' }),
+    prerender: {
+      handleUnseenRoutes: ({ routes }) => {
+        const unexpected = routes.filter((route) => route !== '/tags/[tag]');
+        if (unexpected.length) {
+          throw new Error(`Unprerendered routes: ${unexpected.join(', ')}`);
+        }
+      }
+    },
     paths: {
       base,
       relative: true

@@ -36,7 +36,7 @@ const markdownModules = import.meta.glob('/content/**/*.md', {
   eager: true
 }) as Record<string, string>;
 
-const assetModules = import.meta.glob('/content/**/*.{avif,gif,jpeg,jpg,png,svg,webp}', {
+const assetModules = import.meta.glob('/content/**/*.{avif,gif,heic,heif,jpeg,jpg,png,svg,webp}', {
   query: '?url',
   import: 'default',
   eager: true
@@ -236,6 +236,7 @@ function resolveAssetHref(href: string, sourcePath: string): string {
   const sourceDirectory = sourcePath.slice(0, sourcePath.lastIndexOf('/'));
   const assetPath = normalizeSegments(`${sourceDirectory}/${decodeURIComponent(cleanHref)}`);
   const assetUrl = assetModules[assetPath];
+  if (!assetUrl && /\.(?:heic|heif)$/i.test(assetPath)) return '';
   if (!assetUrl) throw new Error(`Missing local asset ${href} referenced by ${sourcePath}`);
   return assetUrl;
 }
@@ -251,11 +252,11 @@ function imageAssetPath(href: string, sourcePath: string): string | null {
 function resolveImageSet(href: string, sourcePath: string): { href: string; src: string; srcset: string; sizes: string } | null {
   const assetPath = imageAssetPath(href, sourcePath);
   if (!assetPath) return null;
-  const original = assetModules[assetPath];
-  if (!original) throw new Error(`Missing local asset ${href} referenced by ${sourcePath}`);
-  const match = assetPath.match(/^\/content\/media\/(.+)\.(?:jpe?g|png|webp)$/i);
+  const original = assetModules[assetPath] ?? '';
+  const match = assetPath.match(/^\/content\/media\/(.+)\.(jpe?g|png|webp|heic|heif)$/i);
   if (!match) return null;
   const stem = match[1];
+  const extension = match[2].toLowerCase();
   const candidates = [640, 960, 1280, 1920]
     .map((width) => {
       const url = responsiveAssetModules[`/content/responsive-media/${stem}-${width}.webp`];
@@ -263,8 +264,12 @@ function resolveImageSet(href: string, sourcePath: string): { href: string; src:
     })
     .filter((candidate): candidate is { width: number; url: string } => candidate !== null);
   if (!candidates.length) return null;
+  const fallbackHref = extension === 'heic' || extension === 'heif'
+    ? candidates[candidates.length - 1].url
+    : original;
+  if (!fallbackHref) return null;
   return {
-    href: original,
+    href: fallbackHref,
     src: candidates[0].url,
     srcset: candidates.map((candidate) => `${candidate.url} ${candidate.width}w`).join(', '),
     sizes: '(max-width: 720px) calc(100vw - 2rem), 640px'

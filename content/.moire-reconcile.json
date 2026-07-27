@@ -28,7 +28,7 @@
     {
       "path": "blog/mac-os-setting-preferences.md",
       "kind": "markdown",
-      "digest": "93a0df0c5d742b2685f9679bc23907f21db509854bee892eb264571ed87ab74c"
+      "digest": "ec30293c8b6a194cf0ec3a0d1a76d946c5ad0069dee1d9277f9428c2c5735325"
     },
     {
       "path": "blog/症状.md",
@@ -66,7 +66,7 @@
       "digest": "0b282422a15dbbe80089d54742b38eaae84e26eecd7231d86c07a185b986d5b0"
     },
     {
-      "path": "media/4d4ed115e2352a01088edcc0ace0aaee.png",
+      "path": "media/4d4ed115e2352a01088edcc0ace0aaee.heic",
       "kind": "media",
       "digest": "e72d67695858eac81f7df5c8948e871b0fb56fcab6ae4d6792914cb80e1e2a99"
     },
@@ -76,7 +76,7 @@
       "digest": "b5865255551306739a8ded29f2244a3b562819e6387c1540ee2522a02cb9e4e9"
     },
     {
-      "path": "media/7e1b6cd99a62bbfb8235130f14289302.png",
+      "path": "media/7e1b6cd99a62bbfb8235130f14289302.heic",
       "kind": "media",
       "digest": "393522753ea49c7131134f59d729d28647b3661276bbc0660de031b62d66f284"
     },
@@ -91,7 +91,7 @@
       "digest": "61a62edefd755449e051cb52c0382f6d1a93485be257b73e7c6069d42ae7949f"
     },
     {
-      "path": "media/d428d83872634947f6ed2d06dbd08ca5.png",
+      "path": "media/d428d83872634947f6ed2d06dbd08ca5.heic",
       "kind": "media",
       "digest": "5938c226e4e72acc205dd24a6e732a0f3c349cbbdbe1da8230414d4159df7140"
     },
@@ -101,7 +101,7 @@
       "digest": "90c80945f6589d9f3dbe587d7f020fc72f9722a484ac2db1900f43822404364d"
     },
     {
-      "path": "media/f7a9e989fa2fe12370711de6a94756a7.png",
+      "path": "media/f7a9e989fa2fe12370711de6a94756a7.heic",
       "kind": "media",
       "digest": "766e357eb60bbe3b714288b25dbe2db3536695129f0628f58db1c462fb0edc92"
     },
@@ -123,7 +123,7 @@
     {
       "path": "music/marry-you.md",
       "kind": "markdown",
-      "digest": "a3764370c0dbab9bc4200ea20d8e3b5a3783ae4d06e7bfe325a3e9c97614b6e6"
+      "digest": "072062538a8a0859a6441a27758e1db26acf3e7cecda39536bd5e9393e514959"
     },
     {
       "path": "photo/building.md",
@@ -133,7 +133,7 @@
     {
       "path": "photo/food.md",
       "kind": "markdown",
-      "digest": "77d879fdc71f70165402dea83d8607f15502e55b1e4efbd755d2fdbb4e92955c"
+      "digest": "bea848307fc422160f6764a462f5ae80b20478ffb881d75e01c46079d9bbacf9"
     },
     {
       "path": "photo/index.md",
@@ -143,17 +143,17 @@
     {
       "path": "photo/life.md",
       "kind": "markdown",
-      "digest": "809dd030ef97c3f26519441203e8d793ce68c80c07aafff882491f2a4d2d7006"
+      "digest": "859eeaea2cd726d792057db8c8375ee2a0e56b7d51624caea8df2c0f2f7707ed"
     },
     {
       "path": "photo/portrait.md",
       "kind": "markdown",
-      "digest": "36883832e185bccab188ce748507800cda4eff40a7136b4ed1545a63953bd629"
+      "digest": "dfd88fe3bf8c62eee5a524c588f138a529721ecb3110511b8b17205c113e3f15"
     },
     {
       "path": "photo/scenery.md",
       "kind": "markdown",
-      "digest": "284545fa82f70268a62dc3c3df9f69344b52d97bbc498b45718170820ed969fd"
+      "digest": "c8dfc082595449efa77a6021f4a84acb38b46e454215b6dc602e47260635267c"
     },
     {
       "path": "video/desert.md",

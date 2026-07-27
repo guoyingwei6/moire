@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { basename, extname, join, resolve } from 'node:path';
+import convertHeic from 'heic-convert';
 import sharp from 'sharp';
 
 const args = new Map();
@@ -17,7 +19,7 @@ const contentDir = resolve(args.get('content') || 'content');
 const mediaDir = resolve(contentDir, 'media');
 const outputDir = resolve(contentDir, 'responsive-media');
 const widths = [640, 960, 1280, 1920];
-const supported = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const supported = new Set(['.avif', '.heic', '.heif', '.jpg', '.jpeg', '.png', '.webp']);
 const report = { mediaDir, outputDir, generated: [], skipped: [] };
 
 if (!existsSync(mediaDir)) {
@@ -36,9 +38,13 @@ for (const file of readdirSync(mediaDir)) {
   }
 
   const input = join(mediaDir, file);
+  let resizeInput = input;
   let metadata;
   try {
-    metadata = await sharp(input, { unlimited: true }).metadata();
+    if (extension === '.heic' || extension === '.heif') {
+      resizeInput = await heicToJpegBuffer(input);
+    }
+    metadata = await sharp(resizeInput, { unlimited: true }).metadata();
   } catch (error) {
     report.skipped.push({ file, reason: error instanceof Error ? error.message : 'metadata error' });
     continue;
@@ -54,7 +60,7 @@ for (const file of readdirSync(mediaDir)) {
   try {
     for (const width of widths.filter((candidate) => candidate < originalWidth)) {
       const output = join(outputDir, `${stem}-${width}.webp`);
-      await sharp(input, { unlimited: true })
+      await sharp(resizeInput, { unlimited: true })
         .rotate()
         .resize({ width, withoutEnlargement: true })
         .webp({ quality: 82, effort: 4 })
@@ -71,3 +77,13 @@ for (const file of readdirSync(mediaDir)) {
 }
 
 console.log(JSON.stringify(report, null, 2));
+
+async function heicToJpegBuffer(input) {
+  const buffer = await readFile(input);
+  const output = await convertHeic({
+    buffer,
+    format: 'JPEG',
+    quality: 0.92
+  });
+  return Buffer.from(output);
+}

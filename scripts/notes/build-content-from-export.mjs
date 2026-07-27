@@ -152,7 +152,7 @@ function htmlToMarkdown(html, context) {
   text = text.replace(/<img\b[^>]*\bsrc=(["'])(data:image\/([^;]+);base64,([\s\S]*?))\1[^>]*>/gi, (_, _quote, full, mime, base64) => {
     const normalizedBase64 = String(base64).replace(/\s+/g, '');
     const buffer = Buffer.from(normalizedBase64, 'base64');
-    const ext = extensionForMime(mime);
+    const ext = extensionForImage(mime, buffer);
     const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 32);
     const filePath = resolve(contentDir, 'media', `${hash}.${ext}`);
     writeManagedFile(filePath, buffer, 'media');
@@ -552,8 +552,28 @@ function safeHref(href) {
   return /^(https?:\/\/|mailto:|\/|\.\/|\.\.\/)/i.test(String(href || ''));
 }
 
+function extensionForImage(mime, buffer) {
+  return extensionForSignature(buffer) || extensionForMime(mime);
+}
+
+function extensionForSignature(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) return '';
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg';
+  if (buffer.subarray(0, 6).toString('ascii').startsWith('GIF8')) return 'gif';
+  if (buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'webp';
+  if (buffer.subarray(4, 8).toString('ascii') === 'ftyp') {
+    const brandText = buffer.subarray(8, Math.min(buffer.length, 64)).toString('ascii');
+    if (/avif|avis/.test(brandText)) return 'avif';
+    if (/heic|heix|hevc|hevx|mif1|msf1/.test(brandText)) return 'heic';
+  }
+  return '';
+}
+
 function extensionForMime(mime) {
   const value = String(mime || '').toLowerCase();
+  if (value.includes('avif')) return 'avif';
+  if (value.includes('heic') || value.includes('heif')) return 'heic';
   if (value.includes('jpeg') || value.includes('jpg')) return 'jpg';
   if (value.includes('gif')) return 'gif';
   if (value.includes('webp')) return 'webp';
