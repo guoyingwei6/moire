@@ -46,7 +46,7 @@ async function saveSettings(request, env = {}) {
     });
 
     return settingsResponse(request, wantsHtml, {
-      message: '设置已保存，Cloudflare 正在重新部署。请稍后刷新页面查看生效结果。',
+      message: 'Saved. Redeploying…',
       commit: result.commit?.sha || null
     });
   } catch (error) {

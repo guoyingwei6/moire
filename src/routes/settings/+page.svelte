@@ -25,7 +25,7 @@
     const params = new URLSearchParams(window.location.search);
     if (params.get('saved') === '1') {
       status = 'success';
-      message = '设置已保存，Cloudflare 正在重新部署。请稍后刷新页面查看生效结果。';
+      message = 'Saved. Redeploying…';
     } else if (params.has('error')) {
       status = 'error';
       message = params.get('error') || 'Save failed.';
@@ -50,7 +50,7 @@
         throw new Error(result.error || `Save failed with HTTP ${response.status}`);
       }
       status = 'success';
-      message = result.message || '设置已保存，Cloudflare 正在重新部署。请稍后刷新页面查看生效结果。';
+      message = result.message || 'Saved. Redeploying…';
     } catch (error) {
       status = 'error';
       message = error instanceof Error ? error.message : 'Save failed.';
