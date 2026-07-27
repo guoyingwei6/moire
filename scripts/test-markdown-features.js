@@ -82,8 +82,24 @@ assert.doesNotMatch(embeds, /<p>\s*<div class="link-embed/, 'block embeds must n
 const youtubeEmbed = render('[https://youtu.be/dQw4w9WgXcQ](https://youtu.be/dQw4w9WgXcQ)');
 assert.match(youtubeEmbed, /https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ/, 'bare YouTube links should use privacy-preserving embed URLs');
 
+const photoEmbed = render('[https://photos.guoyingwei.top](https://photos.guoyingwei.top)');
+assert.match(photoEmbed, /class="link-embed link-embed-photo-site"/, 'the personal photo site should render as a preview card');
+assert.match(photoEmbed, /YingweiGuo&#39;s Photos/, 'photo preview card should include the site title');
+assert.match(photoEmbed, /https:\/\/photos\.guoyingwei\.top\/home-image/, 'photo preview card should use the site preview image');
+
+const appleMap = render('[https://maps.apple.com/?ll=40.025272,116.286638&q=%E5%9B%BD%E5%AE%B6%E5%86%9C%E4%B8%9A%E5%9B%BE%E4%B9%A6%E9%A6%86&t=m](https://maps.apple.com/?ll=40.025272,116.286638&q=%E5%9B%BD%E5%AE%B6%E5%86%9C%E4%B8%9A%E5%9B%BE%E4%B9%A6%E9%A6%86&t=m)');
+assert.match(appleMap, /class="link-embed link-embed-map link-embed-apple-map"/, 'Apple Maps links should render as map cards');
+assert.match(appleMap, /国家农业图书馆/, 'Apple Maps cards should decode q labels');
+assert.match(appleMap, /40\.025272,116\.286638/, 'Apple Maps cards should show coordinates when available');
+
+const googleMap = render('[https://www.google.com/maps/place/Beijing/@39.904211,116.407395,10z](https://www.google.com/maps/place/Beijing/@39.904211,116.407395,10z)');
+assert.match(googleMap, /class="link-embed link-embed-map link-embed-google-map"/, 'Google Maps links should render as map cards');
+assert.match(googleMap, /Beijing/, 'Google Maps cards should use the path place label');
+
 const labelledMusic = render('[listen](https://embed.music.apple.com/cn/album/marry-you/576670451?i=576670463)');
 assert.doesNotMatch(labelledMusic, /link-embed-apple-music/, 'labelled media links should stay ordinary links');
+const labelledMap = render('[open map](https://maps.apple.com/?ll=40.025272,116.286638&q=Place)');
+assert.doesNotMatch(labelledMap, /link-embed-map/, 'labelled map links should stay ordinary links');
 
 assert.throws(
   () => render('Use[^a].\n\n[^a]: One\n[^A]: Two'),

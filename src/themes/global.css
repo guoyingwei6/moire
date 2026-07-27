@@ -485,6 +485,72 @@ input:focus-visible {
   height: 22rem;
 }
 
+.link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 34rem;
+  padding: 1rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.link-card:hover strong {
+  text-decoration: underline;
+}
+
+.link-card-body {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.link-card-eyebrow,
+.link-card small {
+  color: var(--secondary);
+}
+
+.link-card-body > strong,
+.link-card-body > span,
+.link-card-body > small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-card-preview {
+  display: grid;
+  width: 6rem;
+  height: 4.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 0.35rem;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--secondary);
+  font-size: 2rem;
+}
+
+.link-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.link-card-map-preview {
+  background:
+    linear-gradient(135deg, rgba(250, 47, 65, 0.28), transparent 45%),
+    linear-gradient(45deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%),
+    var(--page-bg);
+  background-size: auto, 1.2rem 1.2rem, 1.2rem 1.2rem, auto;
+}
+
+.link-embed-map {
+  background: color-mix(in srgb, var(--secondary) 12%, var(--page-bg));
+}
+
 .photo-article {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

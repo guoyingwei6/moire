@@ -230,7 +230,107 @@ function renderBareLinkEmbed(href, label) {
     return `<div class="link-embed link-embed-apple-tv"><iframe src="${escapeHtml(embedUrl)}" title="Apple TV" loading="lazy" allow="autoplay *; encrypted-media *; fullscreen *"></iframe></div>`;
   }
 
+  const photoCard = photoSitePreview(url);
+  if (photoCard) return photoCard;
+
+  const mapCard = mapPreview(url);
+  if (mapCard) return mapCard;
+
   return '';
+}
+
+/** @param {URL} url */
+function photoSitePreview(url) {
+  if (url.hostname !== 'photos.guoyingwei.top') return '';
+  return cardEmbed({
+    className: 'link-embed-photo-site',
+    href: url.href,
+    eyebrow: 'Photos',
+    title: "YingweiGuo's Photos",
+    description: 'myphotos',
+    domain: url.hostname,
+    image: 'https://photos.guoyingwei.top/home-image',
+    imageAlt: "YingweiGuo's Photos preview"
+  });
+}
+
+/** @param {URL} url */
+function mapPreview(url) {
+  const host = url.hostname.replace(/^www\./, '');
+  const isAppleMap = host === 'maps.apple.com';
+  const isGoogleMap = host === 'maps.google.com' || host === 'google.com' || host === 'goo.gl';
+  if (!isAppleMap && !isGoogleMap) return '';
+
+  const label = mapLabel(url) || (isAppleMap ? 'Apple Maps location' : 'Google Maps location');
+  const provider = isAppleMap ? 'Apple Maps' : 'Google Maps';
+  const coordinates = mapCoordinates(url);
+  const description = coordinates ? `${provider} · ${coordinates}` : provider;
+
+  return cardEmbed({
+    className: isAppleMap ? 'link-embed-map link-embed-apple-map' : 'link-embed-map link-embed-google-map',
+    href: url.href,
+    eyebrow: provider,
+    title: label,
+    description,
+    domain: compactHost(url.hostname),
+    map: true
+  });
+}
+
+/**
+ * @param {{
+ *   className: string,
+ *   href: string,
+ *   eyebrow: string,
+ *   title: string,
+ *   description: string,
+ *   domain: string,
+ *   image?: string,
+ *   imageAlt?: string,
+ *   map?: boolean
+ * }} options
+ */
+function cardEmbed(options) {
+  const preview = options.image
+    ? `<img src="${escapeHtml(options.image)}" alt="${escapeHtml(options.imageAlt || '')}" loading="lazy" decoding="async">`
+    : `<span aria-hidden="true">${options.map ? '🗺️' : '↗'}</span>`;
+
+  return `<div class="link-embed ${escapeHtml(options.className)}"><a class="link-card" href="${escapeHtml(options.href)}" target="_blank" rel="noreferrer"><span class="link-card-body"><span class="link-card-eyebrow">${escapeHtml(options.eyebrow)}</span><strong>${escapeHtml(options.title)}</strong><span>${escapeHtml(options.description)}</span><small>${escapeHtml(options.domain)}</small></span><span class="link-card-preview ${options.map ? 'link-card-map-preview' : ''}">${preview}</span></a></div>`;
+}
+
+/** @param {URL} url */
+function mapLabel(url) {
+  const q = url.searchParams.get('q') || url.searchParams.get('query') || url.searchParams.get('address');
+  if (q) return decodeUrlText(q);
+
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  const placeIndex = pathParts.findIndex((part) => part.toLowerCase() === 'place');
+  if (placeIndex >= 0 && pathParts[placeIndex + 1]) return decodeUrlText(pathParts[placeIndex + 1]);
+  return '';
+}
+
+/** @param {URL} url */
+function mapCoordinates(url) {
+  const ll = url.searchParams.get('ll') || url.searchParams.get('center');
+  if (ll && /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(ll)) return ll;
+
+  const atMatch = url.pathname.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (atMatch) return `${atMatch[1]},${atMatch[2]}`;
+  return '';
+}
+
+/** @param {string} value */
+function decodeUrlText(value) {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, ' ')).trim();
+  } catch {
+    return value.trim();
+  }
+}
+
+/** @param {string} value */
+function compactHost(value) {
+  return value.replace(/^www\./, '');
 }
 
 /** @param {string} value */
