@@ -86,7 +86,7 @@ Automatic publish with push:
 pnpm notes:publish:push
 ```
 
-The publish script refuses to run unless the current Git branch is `blog`. It commits only `notes-export/public-notes.json`, and only when that file changed.
+The publish script refuses to run unless the current Git branch is `blog`. It first runs `git pull --ff-only origin blog` so web settings commits are integrated, then commits only `notes-export/public-notes.json`, and only when that file changed.
 
 ## LaunchAgent
 

@@ -19,6 +19,7 @@ const remote = args.get('remote') || 'origin';
 const push = args.get('push') === 'true';
 const dryRun = args.get('dry-run') === 'true';
 const skipExport = args.get('skip-export') === 'true';
+const syncRemote = args.get('sync-remote') !== 'false';
 const rootFolder = args.get('root') || 'guoyingwei.montaigne.io';
 const commitPrefix = args.get('commit-prefix') || 'Sync Apple Notes snapshot';
 
@@ -52,6 +53,10 @@ function porcelain(paths = []) {
 const currentBranch = output('git', ['branch', '--show-current']);
 if (currentBranch !== branch) {
   throw new Error(`Refusing to publish from branch "${currentBranch}". Expected "${branch}".`);
+}
+
+if (syncRemote) {
+  run('git', ['pull', '--ff-only', remote, branch], { mutates: true });
 }
 
 if (!skipExport) {

@@ -53,13 +53,11 @@ assert.equal(rootRssXml, rootFeedXml, 'root feed.xml and rss.xml aliases must st
 assert.match(rootFeedXml, /<title>GYW&apos;s Website<\/title>/, 'root feed must retain its existing channel identity');
 const rootChannelLink = rootFeedXml.match(/<channel>[\s\S]*?<link>([^<]+)<\/link>/)?.[1];
 assert(rootChannelLink, 'root feed must expose the configured canonical site URL');
-if (process.env.VITE_SITE_URL) {
-	assert.equal(
-		rootChannelLink,
-		`${process.env.VITE_SITE_URL.replace(/\/+$/, '')}/`,
-		'deployment VITE_SITE_URL must control the canonical feed origin'
-	);
-}
+assert.equal(
+	rootChannelLink,
+	'https://moires.guoyingwei.top/',
+	'site.config.json must control the canonical feed origin'
+);
 
 const blogFeedXml = await readFile(path.join(buildDirectory, 'blog', 'feed.xml'), 'utf8');
 assert.match(blogFeedXml, /<title>MacOS setting preferences<\/title>/, 'Blog feed must use the real note title');
@@ -73,7 +71,7 @@ const indexPath = path.join(buildDirectory, 'index.html');
 const indexHtml = await readFile(indexPath, 'utf8');
 assert.match(indexHtml, /<main\b/, 'expected the home page to contain prerendered content');
 assert.doesNotMatch(indexHtml, /Loading\.\.\./, 'home page must not depend on a Loading shell');
-assert.match(indexHtml, /GYW(?:&#39;|')s Website/, 'expected root index settings to control the site title');
+assert.match(indexHtml, /GYW(?:&#39;|')s Website/, 'expected site settings to control the site title');
 assert.equal(
 	(indexHtml.match(/<h1\b/gi) ?? []).length,
 	1,
@@ -139,9 +137,13 @@ assert.match(
 
 const settingsPath = path.join(buildDirectory, 'settings', 'index.html');
 const settingsHtml = await readFile(settingsPath, 'utf8');
-assert.match(settingsHtml, /<h1>Settings<\/h1>/, 'expected a prerendered read-only Settings page');
+assert.match(settingsHtml, /<h1>Settings<\/h1>/, 'expected a prerendered Settings page');
+assert.match(settingsHtml, /<form class="settings-form"/, 'Settings page must expose an editable settings form');
 assert.match(settingsHtml, /Effective site config/, 'Settings page must show the effective site config');
-assert.match(settingsHtml, /Root index overrides/, 'Settings page must show Apple Notes root-index overrides');
+assert.match(settingsHtml, /General Settings/, 'Settings page must include Montaigne-style general settings');
+assert.match(settingsHtml, /Social Settings/, 'Settings page must include Montaigne-style social settings');
+assert.match(settingsHtml, /Customization Settings/, 'Settings page must include Montaigne-style customization settings');
+assert.match(settingsHtml, /Navigation from root index/, 'Settings page must still show Apple Notes root-index navigation');
 assert.doesNotMatch(settingsHtml, /Page metadata and effective options/, 'Settings page should stay concise and not list every page');
 assert.match(settingsHtml, /name="robots" content="noindex"/, 'Settings page should be public but not indexed');
 

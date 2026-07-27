@@ -357,9 +357,63 @@ const LOCAL_PROPERTIES = new Set([
   'title'
 ]);
 
-function inheritedProperties(parent: Record<string, string> | undefined): Record<string, string> {
+const SITE_SETTINGS_PROPERTIES = new Set([
+  'author',
+  'backgroundcolor',
+  'description',
+  'domain',
+  'email',
+  'emoji',
+  'foldername',
+  'github',
+  'githubusername',
+  'hidearchivelink',
+  'hideqrcodelink',
+  'hidetagslink',
+  'instagram',
+  'instagramusername',
+  'linkcolor',
+  'logoemoji',
+  'mastodon',
+  'mastodonlink',
+  'metadata',
+  'previousnext',
+  'publicemail',
+  'qrcode',
+  'rtl',
+  'secondarycolor',
+  'secondarytextcolor',
+  'showarchive',
+  'showbreadcrumbs',
+  'showfoldername',
+  'showfoldernameonthenotespage',
+  'showmetadata',
+  'shownotefooter',
+  'shownotemetadata',
+  'shownotenavigation',
+  'showpostnavigation',
+  'showqrcode',
+  'showtags',
+  'sitedescription',
+  'sitetitle',
+  'siteurl',
+  'tags',
+  'textcolor',
+  'twitter',
+  'twitterusername',
+  'youtube',
+  'youtubelink'
+]);
+
+function inheritedProperties(
+  parent: Record<string, string> | undefined,
+  parentRoute: string | undefined
+): Record<string, string> {
   if (!parent) return {};
-  return Object.fromEntries(Object.entries(parent).filter(([name]) => !LOCAL_PROPERTIES.has(name)));
+  return Object.fromEntries(Object.entries(parent).filter(([name]) => (
+    !LOCAL_PROPERTIES.has(name)
+    && !(parentRoute === '/' && SITE_SETTINGS_PROPERTIES.has(name))
+  )));
 }
 
 function booleanOption(
@@ -446,7 +500,7 @@ function buildRecords(): ContentRecord[] {
     const parentRoute = nearestExistingParentRoute(draft.parentRoute, draftsByRoute);
     const parent = parentRoute ? draftsByRoute.get(parentRoute) : undefined;
     const effective = {
-      ...inheritedProperties(parent ? effectiveFor(parent) : undefined),
+      ...inheritedProperties(parent ? effectiveFor(parent) : undefined, parent?.route),
       ...draft.localProperties
     };
     effectiveByRoute.set(draft.route, effective);

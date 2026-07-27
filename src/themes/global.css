@@ -869,6 +869,62 @@ input:focus-visible {
   color: var(--secondary);
 }
 
+.settings-form {
+  max-width: 42rem;
+}
+
+.settings-form label {
+  display: block;
+  margin: 0 0 1rem;
+}
+
+.settings-form input:not([type='checkbox']) {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.settings-form input[type='checkbox'] {
+  margin-right: 0.45rem;
+}
+
+.settings-form button {
+  display: inline-block;
+  min-width: 5rem;
+  padding: 0.65rem 1.1rem;
+  border: 1px solid var(--text);
+  background: var(--text);
+  color: var(--page-bg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.success {
+  color: #197b30;
+}
+
+.error {
+  color: var(--accent);
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));

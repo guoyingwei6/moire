@@ -17,8 +17,15 @@ Use these settings for the `blog` site:
 - Build command: `pnpm build`
 - Build output directory: `build`
 - Root directory: repository root
-- `VITE_SITE_URL`: `https://moires.guoyingwei.top`
+- `VITE_SITE_URL`: not required; site domain is controlled by `/settings/` and `site.config.json`
 - `BASE_PATH`: unset
+- `SETTINGS_PASSWORD`: password for the web settings form
+- `GITHUB_TOKEN`: fine-grained GitHub token that can write repository contents
+- `GITHUB_REPOSITORY`: `guoyingwei6/moire`
+- `GITHUB_BRANCH`: `blog`
+
+`SETTINGS_PASSWORD` and `GITHUB_TOKEN` are Cloudflare environment variables.
+Do not commit them to the repository.
 
 `pnpm build` runs the `prebuild` script first:
 
@@ -44,3 +51,21 @@ Verified on 2026-07-27:
 - `/sitemap.xml` includes generated pages
 
 GitHub Actions does not deploy this branch; Cloudflare Pages listens to `blog`.
+
+## Web settings
+
+`/settings/` is an editable site settings page. It saves only
+`site.config.json` on the `blog` branch through the Cloudflare Pages Function at
+`/api/settings`.
+
+The web form controls site-level settings:
+
+- title, author, description, domain, logo emoji and right-to-left text;
+- Twitter, Instagram, GitHub, YouTube, Mastodon and public email;
+- background, text, secondary text and link colors;
+- QR, Tags, Archive, folder-name, previous/next, footer and metadata display.
+
+Apple Notes `index` remains responsible for navigation and content structure.
+The Mac publish script runs `git pull --ff-only origin blog` before exporting
+Notes so settings commits made from the website do not conflict with later
+snapshot pushes.

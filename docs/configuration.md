@@ -1,8 +1,8 @@
 # Configure the site from Apple Notes
 
-> Current implementation note: configuration is read from the macOS-exported root `index` note in `notes-export/public-notes.json`, then applied during Cloudflare's `pnpm build`. Older references to iPhone Shortcut behavior describe the abandoned Shortcut route and are not required for the active `blog` deployment.
+> Current implementation note: site-level settings are stored in `site.config.json` and can be edited from `/settings/`. The macOS-exported root `index` note controls navigation and content structure. Older references to iPhone Shortcut behavior describe the abandoned Shortcut route and are not required for the active `blog` deployment.
 
-The public root note named `index` is the primary control surface. It can hold the Home page body, the visible navigation and global site settings in one place. `site.config.json` remains the validated fallback when the menu table is absent. A present but invalid menu stops the build instead of silently widening the visible publication surface.
+The public root note named `index` is the content control surface. It can hold the Home page body and the visible navigation. `site.config.json` stores site identity, colors, social links and default display switches. A present but invalid menu stops the build instead of silently widening the visible publication surface.
 
 GitHub Actions YAML is intentionally not a settings database. The workflow only checks, builds and deploys the content that the Shortcut has already exported.
 
@@ -35,30 +35,21 @@ When a valid root menu table exists, it is authoritative: only its rows appear i
 
 The configuration table itself is removed before the Home page Markdown renders.
 
-## Global settings in the same note
+## Site settings
 
-Add a separate `name/value` table anywhere in the root `index` note:
+Use `/settings/` for site-level settings. The form writes `site.config.json`
+on the `blog` branch and Cloudflare Pages redeploys the site.
 
-```markdown
-| name | value |
-| --- | --- |
-| title | GYW's Website |
-| description | Notes, photos, music and videos published from Apple Notes. |
-| logoEmoji | 📌 |
-| showChildren | no |
-| backgroundColor | #fffef2 |
-| linkColor | #fa2f41 |
-```
+The editable site settings are:
 
-Currently connected global properties are:
+- title, author, description, domain, logo emoji and right-to-left text;
+- Twitter, Instagram, GitHub, YouTube, Mastodon and public email;
+- background, text, secondary text and link colors;
+- QR, Tags, Archive, folder-name, previous/next, footer and metadata display.
 
-- `title`, `author`, `description`, `domain`, `emoji`/`logoEmoji`, `RTL`
-- `twitter`, `instagram`, `github`, `youtube`, `mastodon`, `email` (also accepts the older `...Username`, `...Link` and `publicEmail` names)
-- `backgroundColor`, `textColor`, `secondaryTextColor`, `linkColor`
-- `showQRCode`, `showTags`, `showArchive`, `showNoteNavigation`, `showNoteFooter`, `showNoteMetadata`, `showBreadcrumbs`
-- Montaigne-compatible inverse names `hideQRCodeLink`, `hideTagsLink` and `hideArchiveLink`
-
-Booleans accept `yes/no`, `true/false`, `1/0` and `on/off`. Colours must be 3, 4, 6 or 8 digit hex values. Invalid controlled values stop the build with the property name instead of silently generating broken CSS or unsafe links.
+These settings are intentionally not read from the Apple Notes root `index` note.
+This avoids a conflict where a future Notes sync would override settings saved
+from the web page.
 
 `showChildren=no` on the root hides the Home page's child listing; it does not stop child folders from publishing or hide explicit Sidebar rows.
 
@@ -87,7 +78,7 @@ Core properties connected in this branch:
 - `slug`: replace an ordinary note's filename-derived URL with one safe segment inside the same folder, for example `stable-note`. Values may use Unicode letters and numbers plus dots, underscores, tildes and hyphens. Empty values, collection `index` notes and other URL punctuation stop the build.
 - `aliases`: add comma-separated alternative URLs for a note. A bare value such as `old-title` creates a sibling URL; an absolute value such as `/old/blog/title/` creates that site-local URL. Each alias becomes a static permanent redirect to the canonical note. External URLs, generated endpoints, unsafe segments and collisions stop the build. Montaigne documents the property but not its exact list grammar; this explicit grammar keeps the GitHub-only result deterministic.
 
-Identity and collection controls such as `pinned`, `showInMenu`, `showInFooter`, `showChildren`, `sortBy`, `layout` and `previewProps` are local to that note/index. Visual note settings such as breadcrumbs and metadata visibility inherit.
+Identity and collection controls such as `pinned`, `showInMenu`, `showInFooter`, `showChildren`, `sortBy`, `layout` and `previewProps` are local to that note/index. Site identity, colors, social links and default display switches belong to `/settings/` / `site.config.json`.
 
 A folder `index` is optional. Without it, the folder still publishes and lists its notes using defaults. Creating a new ordinary note inside an already authorized folder requires no index edit and no Shortcut edit.
 
@@ -104,11 +95,11 @@ The direct page is deliberately still generated and carries `noindex, nofollow` 
 
 ## Repository fallback and Pages base path
 
-`site.config.json` still stores defaults, social links and a fallback menu. Most daily changes should now happen in the root Apple Note instead of editing JSON or code.
+`site.config.json` stores site identity, colors, social links, default display switches and a fallback menu. Most daily content-structure changes should happen in the root Apple Note. Most site-appearance changes should happen in `/settings/`.
 
 The public domain and SvelteKit base path remain separate:
 
 - Custom domain or user Pages site: build with an empty `BASE_PATH`.
 - Project Pages site at `/moire`: build with `BASE_PATH=/moire`.
 
-Changing the root `domain` setting updates canonical URLs, feeds, Sitemap and QR output. It does not configure DNS or GitHub Pages itself.
+Changing the `/settings/` site domain updates canonical URLs, feeds, Sitemap and QR output. It does not configure DNS, GitHub Pages or Cloudflare custom-domain bindings itself.
