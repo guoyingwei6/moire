@@ -2,9 +2,19 @@ const DEFAULT_REPOSITORY = 'guoyingwei6/moire';
 const DEFAULT_BRANCH = 'blog';
 const CONFIG_PATH = 'site.config.json';
 
-export async function onRequestPost(context) {
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/settings') {
+      if (request.method === 'POST') return saveSettings(request, env);
+      return json({ error: 'Use POST to save settings.' }, 405);
+    }
+    return env.ASSETS.fetch(request);
+  }
+};
+
+async function saveSettings(request, env = {}) {
   try {
-    const env = context.env || {};
     const password = env.SETTINGS_PASSWORD;
     const token = env.GITHUB_TOKEN;
     const repository = env.GITHUB_REPOSITORY || DEFAULT_REPOSITORY;
@@ -14,7 +24,7 @@ export async function onRequestPost(context) {
       return json({ error: 'Settings API is not configured. Missing SETTINGS_PASSWORD or GITHUB_TOKEN.' }, 501);
     }
 
-    const form = await context.request.formData();
+    const form = await request.formData();
     if (String(form.get('password') || '') !== String(password)) {
       return json({ error: 'Invalid settings password.' }, 401);
     }
@@ -44,10 +54,6 @@ export async function onRequestPost(context) {
     const message = error instanceof Error ? error.message : 'Unknown settings error.';
     return json({ error: message }, 400);
   }
-}
-
-export async function onRequestGet() {
-  return json({ error: 'Use POST to save settings.' }, 405);
 }
 
 function updateConfig(config, form) {
