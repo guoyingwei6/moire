@@ -1,42 +1,46 @@
-# Cloudflare Pages deployment for the blog branch
+# Cloudflare Pages deployment
 
-The two branches intentionally use separate deployment systems and domains:
+The two public sites are intentionally separate:
 
 ```text
 main -> GitHub Pages      -> https://moire.guoyingwei.top
 blog -> Cloudflare Pages -> https://moires.guoyingwei.top
 ```
 
-- Cloudflare project: `moire-blog`
-- Cloudflare fallback URL: `https://moire-blog.pages.dev`
+`main` remains available for upstream/original Moire work. The macOS Apple Notes exporter pushes only `blog`.
 
-GitHub Pages remains unchanged and continues to deploy only `main`. The
-Cloudflare project connects to the same GitHub repository but sets its
-production branch to `blog`, so the two branches never compete for one Pages
-deployment slot.
+## Cloudflare Pages settings
 
-## Cloudflare build settings
+Use these settings for the `blog` site:
 
 - Production branch: `blog`
-- Automatic production deployments: enabled
-- Preview branch deployments: disabled (the repository's other branches are not Cloudflare inputs)
-- Framework preset: none / SvelteKit static
 - Build command: `pnpm build`
 - Build output directory: `build`
 - Root directory: repository root
-- Node.js: `22.22.2`
-- pnpm: `9.15.9`
 - `VITE_SITE_URL`: `https://moires.guoyingwei.top`
 - `BASE_PATH`: unset
 
-`VITE_SITE_URL` is public deployment metadata, not a secret. It supplies the
-canonical origin used by metadata, feeds, Sitemap and QR output without adding
-a `domain` row to the existing Apple Notes root `index`. If that note later
-contains an explicit `domain`, the Notes value remains authoritative.
+`pnpm build` runs the `prebuild` script first:
 
-The custom domain is attached only after the repository's production build
-passes. The iPhone publisher has its own stricter rollout gate: its offline dry
-run and isolated disposable-repository test must pass before it can write this
-branch. Adding several domains to one Cloudflare Pages project would still
-serve one build; separate content needs a separate Pages project, not merely
-another DNS record.
+```sh
+node scripts/notes/build-content-from-export.mjs \
+  --in notes-export/public-notes.json \
+  --content content \
+  --clean true \
+  --if-exists true
+```
+
+That means Cloudflare regenerates `content/**` from the committed raw snapshot before SvelteKit builds the static site.
+
+## Verified deployment
+
+Verified on 2026-07-27:
+
+- `origin/blog=60d14de0aa31c939b7150a77816f43e2cd30de2b`
+- `https://moires.guoyingwei.top/` returns HTTP 200
+- `/blog/` lists `症状` and `MacOS setting preferences`
+- `/blog/症状/` renders two images
+- `/photo/portrait/` renders four images
+- `/sitemap.xml` includes generated pages
+
+GitHub Actions does not deploy this branch; Cloudflare Pages listens to `blog`.

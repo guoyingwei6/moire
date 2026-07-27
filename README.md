@@ -1,59 +1,123 @@
 # Moire Blog
 
-This `blog` branch turns the upstream Moire memo stream into a folder-based, static blog inspired by Montaigne. GitHub stores the Markdown and images, and SvelteKit discovers the complete `content/` folder tree and builds the site.
+This `blog` branch publishes an Apple Notes folder tree as a Montaigne-style static site.
 
-No hosted Notes account or third-party publishing server is required. GitHub cannot read Apple Notes directly, so publishing still needs an owner-controlled exporter. The website side is ready for arbitrary nested folders. The iPhone protocol uses the existing root `index` menu as its publication allow-list: the menu label identifies the Apple Notes folder and the local link identifies its destination below `content/`. It does not add per-folder anchors or `source`/`path` columns. The five copied Shortcuts are not yet approved for real upload.
-
-## Content model
+Current verified chain:
 
 ```text
-content/
-├── index.md              -> /
-├── blog/
-│   ├── index.md          -> /blog/
-│   └── a-note.md         -> /blog/a-note/
-├── photo/
-├── music/
-├── video/
-└── about/
+iPhone Apple Notes
+  -> iCloud sync
+  -> Mac Notes.app exporter
+  -> notes-export/public-notes.json on origin/blog
+  -> Cloudflare Pages prebuild converts the snapshot to content/**
+  -> https://moires.guoyingwei.top
 ```
 
-Folders become section pages. A folder `index` is optional. Section pages support list, timeline, feed, grid and table layouts; each title opens a permanent note page. A note-level `slug` can provide a stable custom URL without moving it out of its folder, while `aliases` preserve old URLs as static redirects. The build also creates Search, Tags, Archive, QR, root and per-Collection RSS, and Sitemap pages. Fenced Markdown code blocks, footnotes, automatic heading tables of contents and any number of local Markdown images are supported.
+The Mac only exports and pushes a raw public snapshot. GitHub/Cloudflare do the parsing, content generation and deployment.
 
-## Site settings
+## Branches and domains
 
-The root [`content/index.md`](content/index.md) is the daily control surface: its ordinary `menu | link | type` table configures Sidebar/Header navigation and doubles as the iOS publication allow-list. Its settings table controls the title, colours and display switches. Folder and note tables add inherited metadata, sorting, pinning and layouts. Prefix a note title with `_` to hide it from discovery while retaining its hard-to-guess direct page.
+- `main`: upstream/original Moire route, served separately at `https://moire.guoyingwei.top`.
+- `development`: minimal title-list experiment line; not used by this macOS exporter.
+- `blog`: macOS Apple Notes exporter and Cloudflare Pages deployment for `https://moires.guoyingwei.top`.
 
-[`site.config.json`](site.config.json) remains the validated technical fallback and holds social defaults. GitHub Actions YAML is only the build-and-deploy recipe; it is not the settings database.
+The exporter refuses to publish unless the current Git branch is `blog`.
 
-See [`docs/configuration.md`](docs/configuration.md) for every field, [`docs/apple-notes-github-sync.md`](docs/apple-notes-github-sync.md) for the Notes-to-GitHub content protocol, [`docs/publish-manifest.md`](docs/publish-manifest.md) for deletion/rename ownership and retry safety, [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md) for the isolated `blog` deployment, and [`docs/montaigne-parity.md`](docs/montaigne-parity.md) for the audited feature-parity boundary.
+## Apple Notes structure
 
-## Local development
+Create one public parent folder in Apple Notes:
 
-```bash
-pnpm install --frozen-lockfile
-pnpm dev
+```text
+guoyingwei.montaigne.io
+├── index
+├── Blog
+├── Photo
+├── Music
+├── Video
+└── About
 ```
 
-Validate a root-domain build:
+The root `index` note controls the home page and the public section allow-list. Its menu table should contain `menu` and `url` columns:
 
-```bash
-pnpm test
-pnpm check
+```markdown
+| menu | url | type |
+| --- | --- | --- |
+| 🏠Home | / | sidebar |
+| 📒Blog | /blog | sidebar |
+| 🎞️Photo | /photo | sidebar |
+| 🎧Music | /music | sidebar |
+| 📺Video | /video | sidebar |
+| 🧑‍💻About | /about/about-me | sidebar |
+```
+
+Only direct child folders listed by this table are published. Notes whose title starts with `_` are skipped before the raw snapshot is written.
+
+## Local commands
+
+From the `blog` worktree:
+
+```sh
+pnpm install
+pnpm notes:export
+pnpm notes:publish
+pnpm notes:publish:push
 pnpm build
+pnpm test
+pnpm test:build
 ```
 
-Validate GitHub project Pages at `/moire`:
+- `pnpm notes:export` writes `notes-export/public-notes.json`.
+- `pnpm notes:publish` exports and creates a local commit only if the snapshot changed.
+- `pnpm notes:publish:push` does the same and pushes `origin/blog` only when a new commit was created.
+- `pnpm build` runs `prebuild`, which regenerates `content/**` from the snapshot.
 
-```bash
-BASE_PATH=/moire pnpm build
+## Automatic Mac sync
+
+A user LaunchAgent is installed on this Mac:
+
+```text
+/Users/guoyingwei/Library/LaunchAgents/com.guoyingwei.moire-blog-notes.plist
 ```
 
-## Branch boundary
+It runs every 10 minutes:
 
-- `main` remains available for synchronizing the upstream Moire project.
-- This implementation is developed on `blog`.
-- The committed Pages workflow still listens only to `main`; pushing `blog` does not publish or replace the current site.
+```text
+/opt/homebrew/bin/node scripts/notes/publish-macos-notes.mjs --push true
+```
+
+Useful checks:
+
+```sh
+launchctl print gui/$(id -u)/com.guoyingwei.moire-blog-notes
+tail -n 100 logs/launchd.out.log
+tail -n 100 logs/launchd.err.log
+git status --short --branch
+```
+
+To stop it:
+
+```sh
+launchctl bootout gui/$(id -u)/com.guoyingwei.moire-blog-notes
+```
+
+## Restore on another Mac
+
+1. Clone this repository and checkout `blog`.
+2. Install Node, pnpm and Git.
+3. Make sure Notes.app is signed into iCloud and has the public parent folder.
+4. Run `pnpm install`.
+5. Run `pnpm notes:export` once and approve macOS Automation permission for the terminal to control Notes.app.
+6. Run `pnpm notes:publish` and confirm it refuses to run outside `blog`.
+7. Copy `scripts/notes/launchd/com.guoyingwei.moire-blog-notes.plist` to `~/Library/LaunchAgents/`.
+8. Run `launchctl bootstrap`, `launchctl enable`, and `launchctl kickstart`.
+
+Cloudflare Pages should use production branch `blog`, build command `pnpm build`, output directory `build`, and custom domain `moires.guoyingwei.top`.
+
+## Current limits
+
+- Only direct child folders of the public parent are supported.
+- Deletion/rename/move reconciliation is intentionally simple: Cloudflare rebuilds from the latest raw snapshot, but no separate manifest cleanup protocol is active yet.
+- The trigger is a 10-minute LaunchAgent pseudo-hook, not a real Apple Notes change event.
 
 ## License
 

@@ -1,5 +1,7 @@
 # Configure the site from Apple Notes
 
+> Current implementation note: configuration is read from the macOS-exported root `index` note in `notes-export/public-notes.json`, then applied during Cloudflare's `pnpm build`. Older references to iPhone Shortcut behavior describe the abandoned Shortcut route and are not required for the active `blog` deployment.
+
 The public root note named `index` is the primary control surface. It can hold the Home page body, the visible navigation and global site settings in one place. `site.config.json` remains the validated fallback when the menu table is absent. A present but invalid menu stops the build instead of silently widening the visible publication surface.
 
 GitHub Actions YAML is intentionally not a settings database. The workflow only checks, builds and deploys the content that the Shortcut has already exported.

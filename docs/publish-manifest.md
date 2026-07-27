@@ -1,5 +1,7 @@
 # Managed publish manifest
 
+> Historical design note. No manifest cleanup protocol is active in the current macOS exporter. The verified production path commits only `notes-export/public-notes.json`; Cloudflare rebuilds `content/**` from that snapshot. Use this document only if deletion/rename/move reconciliation is implemented later.
+
 Apple Notes export is a one-way publication workflow, but it should still
 converge after a published note is deleted, renamed or moved. Moire therefore
 reserves `content/.moire-manifest.json` as a machine-written ownership record.
@@ -66,6 +68,6 @@ rules.
 The pure validation and reconciliation rules live in
 `src/lib/sync/publish-manifest.js` and have deterministic unit tests. They do
 not delete anything by themselves. The feature must not be called operational
-until the same rules are present in the signed iOS Shortcut, an offline dry run
-has passed on the real public Notes tree, and the owner separately authorizes
-the first isolated `blog`-branch write.
+until the current macOS exporter explicitly implements the same rules, a dry
+run has passed on the real public Notes tree, and the owner separately
+authorizes cleanup behavior.

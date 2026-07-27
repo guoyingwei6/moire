@@ -1,5 +1,7 @@
 # Montaigne parity map
 
+> Historical design note. The active 2026-07-27 implementation uses the macOS Notes.app exporter plus LaunchAgent described in `README.md` and `docs/apple-notes-github-sync.md`. Any iPhone Shortcut contract below is retained only as prior research, not as the current publishing path.
+
 This map records the 2026-07-25 audit of the public Montaigne documentation and keeps evidence separate from implementation claims. The audit covered all 52 sitemap articles: 22 Features, 16 Guides, 10 Demo pages, plus FAQ, Limits, Changelog and Roadmap. The four section landing pages, Archive, Search, feeds, Sitemap, robots, PDF and QR endpoints were checked separately.
 
 ## Folder and index model
@@ -17,7 +19,7 @@ one fixed public root FolderEntity
   -> matching-note count must equal the selected FolderEntity note count
 ```
 
-Ordinary notes added to an already authorized folder require no configuration change. A new public Collection adds one ordinary root-index menu row; the five Shortcut definitions remain unchanged. The owner has accepted one environment constraint: no private or cross-account folder may reuse an allow-listed public folder name. An observed duplicate stops the complete batch.
+Ordinary notes added to an already authorized folder require no configuration change. A new public Collection adds one ordinary root-index menu row. The owner accepted one environment constraint during the historical design phase: no private or cross-account folder may reuse an allow-listed public folder name. An observed duplicate would stop the complete batch in that design.
 
 ## Implemented on the blog branch
 
