@@ -1,6 +1,6 @@
 export const config = {
   title: "Moire",
-  author: "Aeris",
+  author: "Yingwei Guo",
   theme: "classic",
   heatmap: false,
   pageSize: 20,

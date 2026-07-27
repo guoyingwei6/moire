@@ -36,7 +36,7 @@
   </div>
 
     <footer class="mt-16 text-center mx-9 text-[0.8rem] text-gray-400 pb-8">
-      <p>© {new Date().getFullYear()} {config.author}, synced from Apple Notes and powered by <a href="https://moire.blog/" target="_blank" class="hover:text-gray-600 transition-colors">Moire</a></p>
+      <p>© {new Date().getFullYear()} {config.author}, synced from Apple Notes and powered by <a href="https://github.com/guoyingwei6/moire/tree/development" target="_blank" rel="noreferrer" class="hover:text-gray-600 transition-colors">Moire</a></p>
     </footer>
 </div>
 
