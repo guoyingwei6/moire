@@ -8,14 +8,14 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>/opt/homebrew/bin/node</string>
+    <string>__NODE__</string>
     <string>scripts/notes/publish-macos-notes.mjs</string>
     <string>--push</string>
     <string>true</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/guoyingwei/MyFiles/GitHub/moire/.worktrees/blog</string>
+  <string>__WORKTREE__</string>
 
   <key>StartInterval</key>
   <integer>600</integer>
@@ -24,10 +24,10 @@
   <true/>
 
   <key>StandardOutPath</key>
-  <string>/Users/guoyingwei/MyFiles/GitHub/moire/.worktrees/blog/logs/launchd.out.log</string>
+  <string>__WORKTREE__/logs/launchd.out.log</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/guoyingwei/MyFiles/GitHub/moire/.worktrees/blog/logs/launchd.err.log</string>
+  <string>__WORKTREE__/logs/launchd.err.log</string>
 
   <key>EnvironmentVariables</key>
   <dict>

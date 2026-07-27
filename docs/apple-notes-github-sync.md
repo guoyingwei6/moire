@@ -90,6 +90,20 @@ The publish script refuses to run unless the current Git branch is `blog`. It fi
 
 ## LaunchAgent
 
+One-command setup on a new Mac:
+
+```sh
+git clone https://github.com/guoyingwei6/moire.git
+cd moire
+git checkout blog
+node scripts/notes/setup-macos-sync.mjs
+```
+
+The setup script installs dependencies, performs one Apple Notes export to
+trigger macOS Automation permission, renders the LaunchAgent plist for the
+current Node path and worktree path, installs it, kickstarts it and prints
+status.
+
 The installed LaunchAgent runs every 10 minutes:
 
 ```text
@@ -102,12 +116,45 @@ It executes:
 /opt/homebrew/bin/node scripts/notes/publish-macos-notes.mjs --push true
 ```
 
+It is a scheduled `launchd` job, not a long-running daemon. Between runs,
+`launchctl print` normally shows `state = not running`. That is expected.
+`launchd` starts a new run at login and every `StartInterval` seconds.
+
 Check it with:
 
 ```sh
-launchctl print gui/$(id -u)/com.guoyingwei.moire-blog-notes
+pnpm notes:agent:status
 tail -n 100 logs/launchd.out.log
 tail -n 100 logs/launchd.err.log
 ```
 
 The verified no-change behavior is `changed=false` and `pushed=false`.
+
+Install or reload it with:
+
+```sh
+pnpm notes:agent:install
+```
+
+The install command renders
+`scripts/notes/launchd/com.guoyingwei.moire-blog-notes.plist` with the current
+Node path and current worktree path, then loads it into
+`~/Library/LaunchAgents/`. This is the preferred migration path for a new Mac or
+another user.
+
+To change the interval:
+
+```sh
+MOIRE_NOTES_INTERVAL=1800 pnpm notes:agent:install
+MOIRE_NOTES_INTERVAL=1800 node scripts/notes/setup-macos-sync.mjs
+```
+
+Stability rules:
+
+- The publisher refuses to run unless the current branch is `blog`.
+- It pulls `origin/blog` with `--ff-only` before export, preventing silent merge
+  commits and reducing conflicts with web settings commits.
+- It commits only `notes-export/public-notes.json`; Cloudflare regenerates
+  Markdown, responsive images and the final site during build.
+- If a run fails, the next interval retries. Check `logs/launchd.err.log` for the
+  failed command.
