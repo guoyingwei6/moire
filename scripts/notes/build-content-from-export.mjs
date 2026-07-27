@@ -1,0 +1,410 @@
+#!/usr/bin/env node
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
+
+const args = new Map();
+for (let index = 2; index < process.argv.length; index += 1) {
+  const key = process.argv[index];
+  if (!key.startsWith('--')) continue;
+  const value = process.argv[index + 1] && !process.argv[index + 1].startsWith('--')
+    ? process.argv[++index]
+    : 'true';
+  args.set(key.slice(2), value);
+}
+
+const input = resolve(args.get('in') || 'notes-export/public-notes.json');
+const contentDir = resolve(args.get('content') || 'content');
+const clean = args.get('clean') === 'true';
+const ifExists = args.get('if-exists') === 'true';
+if (!existsSync(input)) {
+  if (ifExists) {
+    console.log(JSON.stringify({ input, skipped: true, reason: 'input does not exist' }, null, 2));
+    process.exit(0);
+  }
+  throw new Error(`Notes export snapshot not found: ${input}`);
+}
+const data = JSON.parse(readFileSync(input, 'utf8'));
+const siteConfig = JSON.parse(readFileSync(resolve('site.config.json'), 'utf8'));
+
+const sectionSlugs = new Map(data.sections.map((section) => [section.name, slugify(section.name)]));
+const rootIndexNote = data.root.notes.find((note) => normalizedTitle(note.name) === 'index') || data.root.notes[0];
+const publicSectionSlugs = extractPublicSectionSlugs(rootIndexNote?.body, sectionSlugs);
+const report = {
+  input,
+  contentDir,
+  notes: [],
+  media: [],
+  skippedDrafts: [],
+  skippedSections: []
+};
+
+if (clean) {
+  for (const name of ['about', 'blog', 'music', 'photo', 'video', 'media']) {
+    rmSync(resolve(contentDir, name), { recursive: true, force: true });
+  }
+}
+mkdirSync(contentDir, { recursive: true });
+mkdirSync(resolve(contentDir, 'media'), { recursive: true });
+
+writeNote({
+  note: rootIndexNote,
+  sectionSlug: '',
+  outputPath: resolve(contentDir, 'index.md'),
+  isIndex: true
+});
+
+for (const section of data.sections) {
+  const sectionSlug = sectionSlugs.get(section.name);
+  if (!sectionSlug) continue;
+  if (publicSectionSlugs.size && !publicSectionSlugs.has(sectionSlug)) {
+    report.skippedSections.push({ section: section.name, slug: sectionSlug, reason: 'not listed in root index menu table' });
+    continue;
+  }
+  mkdirSync(resolve(contentDir, sectionSlug), { recursive: true });
+  const visibleNotes = section.notes.filter((note) => !isDraft(note.name));
+  for (const note of section.notes) {
+    if (isDraft(note.name)) {
+      report.skippedDrafts.push({ section: section.name, title: note.name, id: note.id });
+      continue;
+    }
+    const isIndex = normalizedTitle(note.name) === 'index';
+    const slug = isIndex ? 'index' : slugify(note.name);
+    writeNote({
+      note,
+      sectionSlug,
+      outputPath: resolve(contentDir, sectionSlug, `${slug}.md`),
+      isIndex
+    });
+  }
+  if (!visibleNotes.some((note) => normalizedTitle(note.name) === 'index')) {
+    const title = section.name;
+    writeFileSync(
+      resolve(contentDir, sectionSlug, 'index.md'),
+      frontmatter({ title, created: '', updated: '' })
+    );
+  }
+}
+
+console.log(JSON.stringify(report, null, 2));
+
+function writeNote({ note, sectionSlug, outputPath, isIndex }) {
+  if (!note) return;
+  const markdown = normalizeMarkdownBody(htmlToMarkdown(note.body, {
+    noteId: stableId(note),
+    sourcePath: outputPath
+  }), note.name).trim();
+  const title = isIndex ? titleForIndex(sectionSlug, note.name) : note.name;
+  const body = `${!sectionSlug && isIndex ? normalizeRootIndexMarkdown(markdown) : markdown}\n`;
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, frontmatter({ title, created: note.created, updated: note.modified }) + body);
+  report.notes.push({
+    title: note.name,
+    id: note.id,
+    output: relative(process.cwd(), outputPath),
+    bytes: Buffer.byteLength(body)
+  });
+}
+
+function htmlToMarkdown(html, context) {
+  let text = String(html || '');
+  text = text.replace(/<img\b[^>]*\bsrc=(["'])(data:image\/([^;]+);base64,([\s\S]*?))\1[^>]*>/gi, (_, _quote, full, mime, base64) => {
+    const normalizedBase64 = String(base64).replace(/\s+/g, '');
+    const buffer = Buffer.from(normalizedBase64, 'base64');
+    const ext = extensionForMime(mime);
+    const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 32);
+    const filePath = resolve(contentDir, 'media', `${hash}.${ext}`);
+    writeFileSync(filePath, buffer);
+    const href = relative(dirname(context.sourcePath), filePath).replaceAll('\\', '/');
+    report.media.push({ noteId: context.noteId, href, bytes: buffer.length });
+    return `\n\n![](${href})\n\n`;
+  });
+
+  text = text.replace(/<table\b[\s\S]*?<\/table>/gi, tableToMarkdown);
+  text = convertMonoBlocks(text);
+  text = convertInlineMono(text);
+  text = text.replace(/<(h[1-6])\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, tag, body) => {
+    const level = Number(tag.slice(1));
+    return `\n\n${'#'.repeat(level)} ${inlineText(body)}\n\n`;
+  });
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p\s*>/gi, '\n\n');
+  text = text.replace(/<p\b[^>]*>/gi, '');
+  text = text.replace(/<\/div\s*>/gi, '\n');
+  text = text.replace(/<div\b[^>]*>/gi, '');
+  text = text.replace(/<li\b[^>]*>([\s\S]*?)<\/li>/gi, (_, body) => `\n- ${inlineText(body)}`);
+  text = text.replace(/<\/?(?:ul|ol)\b[^>]*>/gi, '\n');
+  text = text.replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, _tag, body) => `**${inlineText(body)}**`);
+  text = text.replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, _tag, body) => `*${inlineText(body)}*`);
+  text = text.replace(/<a\b[^>]*\bhref=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi, (_, _quote, href, body) => {
+    const label = inlineText(body);
+    return safeHref(href) ? `[${label}](${href})` : label;
+  });
+  text = stripTags(text);
+  text = decodeEntities(text);
+  text = text.replace(/[ \t]+\n/g, '\n');
+  text = text.replace(/\n{3,}/g, '\n\n');
+  return text;
+}
+
+function convertMonoBlocks(html) {
+  const lines = [];
+  const divPattern = /<div\b[^>]*>([\s\S]*?)<\/div>/gi;
+  let output = '';
+  let cursor = 0;
+  let match;
+  while ((match = divPattern.exec(html)) !== null) {
+    const before = html.slice(cursor, match.index);
+    const divHtml = match[0];
+    const inner = match[1];
+    const monoLine = monoOnlyLine(inner);
+    if (monoLine === null) {
+      output += flushMonoLines(lines);
+      output += before + divHtml;
+    } else {
+      output += before;
+      lines.push(monoLine);
+    }
+    cursor = match.index + divHtml.length;
+  }
+  output += flushMonoLines(lines);
+  output += html.slice(cursor);
+  return output;
+}
+
+function flushMonoLines(lines) {
+  if (!lines.length) return '';
+  const code = lines.splice(0, lines.length).join('\n');
+  return `\n\n\`\`\`\n${code}\n\`\`\`\n\n`;
+}
+
+function monoOnlyLine(innerHtml) {
+  const value = String(innerHtml || '');
+  const isMono = /<tt\b|<font\b[^>]*face=(["'])?[^"'>]*Courier/i.test(value);
+  if (!isMono) return null;
+  const outsideMono = value
+    .replace(/<font\b[^>]*face=(["'])?[^"'>]*Courier[^>]*>[\s\S]*?<\/font>/gi, '')
+    .replace(/<tt\b[^>]*>[\s\S]*?<\/tt>/gi, '');
+  if (inlineText(outsideMono)) return null;
+  const withoutLineBreaks = value.replace(/<br\s*\/?>/gi, '');
+  const text = decodeEntities(stripTags(withoutLineBreaks)).replace(/\u00a0/g, ' ');
+  return text.trimEnd();
+}
+
+function convertInlineMono(html) {
+  return String(html || '')
+    .replace(/<tt\b[^>]*>([\s\S]*?)<\/tt>/gi, (_, body) => inlineCode(body))
+    .replace(/<font\b[^>]*face=(["'])?[^"'>]*Courier[^>]*>([\s\S]*?)<\/font>/gi, (_, _quote, body) => inlineCode(body));
+}
+
+function inlineCode(html) {
+  const code = decodeEntities(stripTags(String(html || ''))).replace(/\s+/g, ' ').trim();
+  if (!code) return '';
+  return `\`${code.replace(/`/g, '\\`')}\``;
+}
+
+function tableToMarkdown(tableHtml) {
+  const rows = htmlTableRows(tableHtml);
+  if (!rows.length || !rows[0].length) return '\n\n';
+  const width = Math.max(...rows.map((row) => row.length));
+  const normalized = rows.map((row) => [...row, ...Array(width - row.length).fill('')]);
+  const header = normalized[0];
+  const body = normalized.slice(1);
+  return `\n\n| ${header.map(escapeTableCell).join(' | ')} |\n| ${header.map(() => '---').join(' | ')} |\n${body.map((row) => `| ${row.map(escapeTableCell).join(' | ')} |`).join('\n')}\n\n`;
+}
+
+function htmlTableRows(tableHtml) {
+  return [...String(tableHtml || '').matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)]
+    .map((row) => [...row[1].matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/gi)].map((cell) => inlineText(cell[1])))
+    .filter((row) => row.length);
+}
+
+function extractPublicSectionSlugs(rootHtml, availableSections) {
+  const allowed = new Set();
+  const tables = [...String(rootHtml || '').matchAll(/<table\b[\s\S]*?<\/table>/gi)].map((match) => match[0]);
+  for (const table of tables) {
+    const rows = htmlTableRows(table);
+    if (rows.length < 2) continue;
+    const header = rows[0].map((cell) => normalizeKey(cell));
+    const menuIndex = header.indexOf('menu');
+    const urlIndex = header.indexOf('url');
+    if (menuIndex === -1 || urlIndex === -1) continue;
+    for (const row of rows.slice(1)) {
+      const url = String(row[urlIndex] || '').trim();
+      const match = url.match(/^\/([^/?#]+)/);
+      if (!match) continue;
+      const slug = slugify(match[1]);
+      if ([...availableSections.values()].includes(slug)) {
+        allowed.add(slug);
+      }
+    }
+  }
+  return allowed;
+}
+
+function inlineText(html) {
+  return decodeEntities(stripTags(String(html || ''))).replace(/\s+/g, ' ').trim();
+}
+
+function stripTags(value) {
+  return value.replace(/<[^>]+>/g, '');
+}
+
+function decodeEntities(value) {
+  return value
+    .replace(/&nbsp;?/gi, ' ')
+    .replace(/&amp;?/gi, '&')
+    .replace(/&lt;?/gi, '<')
+    .replace(/&gt;?/gi, '>')
+    .replace(/&quot;?/gi, '"')
+    .replace(/&#39;?|&apos;?/gi, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([\da-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)));
+}
+
+function frontmatter({ title, created, updated }) {
+  const lines = ['---'];
+  if (title) lines.push(`title: ${yamlString(title)}`);
+  if (created) lines.push(`created: ${dateOnly(created)}`);
+  if (updated) lines.push(`updated: ${dateOnly(updated)}`);
+  lines.push('---', '');
+  return `${lines.join('\n')}\n`;
+}
+
+function titleForIndex(sectionSlug, fallback) {
+  if (!sectionSlug) return siteConfig.site?.title || fallback;
+  for (const [name, slug] of sectionSlugs.entries()) {
+    if (slug === sectionSlug) return name;
+  }
+  return fallback;
+}
+
+function normalizeMarkdownBody(markdown, noteName) {
+  let value = String(markdown || '').replace(/^\uFEFF/, '').trim();
+  value = value
+    .split(/\r?\n/)
+    .map((line) => {
+      const heading = line.match(/^\s*\*\*(#{1,6}\s+.*?)\*\*\s*$/);
+      return heading ? heading[1] : line;
+    })
+    .join('\n');
+
+  const escapedName = escapeRegExp(String(noteName || '').trim());
+  if (escapedName) {
+    const titlePatterns = [
+      new RegExp(`^#{1,6}\\s+${escapedName}\\s*\\n+`, 'iu'),
+      new RegExp(`^\\*\\*#{1,6}\\s+${escapedName}\\*\\*\\s*\\n+`, 'iu'),
+      new RegExp(`^\\*\\*${escapedName}\\*\\*\\s*\\n+`, 'iu')
+    ];
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const pattern of titlePatterns) {
+        if (pattern.test(value)) {
+          value = value.replace(pattern, '').trimStart();
+          changed = true;
+        }
+      }
+    }
+  }
+
+  value = value.replace(/^(?:#\s*\n+)+/, '');
+  value = value.replace(/\n{3,}/g, '\n\n');
+  return value;
+}
+
+function normalizeRootIndexMarkdown(markdown) {
+  const lines = String(markdown || '').split(/\r?\n/);
+  const output = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const header = splitMarkdownTableRow(lines[index]);
+    const delimiter = splitMarkdownTableRow(lines[index + 1] || '');
+    const normalizedHeader = header?.map((cell) => cell.trim().toLowerCase().replace(/[^a-z]/g, ''));
+    const isMenuTable = normalizedHeader?.includes('menu') && normalizedHeader.some((cell) => cell === 'url' || cell === 'link');
+    if (!isMenuTable || !delimiter) {
+      output.push(lines[index]);
+      continue;
+    }
+
+    const typeIndex = normalizedHeader.indexOf('type');
+    output.push(lines[index]);
+    output.push(lines[index + 1]);
+    index += 2;
+    while (index < lines.length) {
+      const row = splitMarkdownTableRow(lines[index]);
+      if (!row || row.length !== header.length) {
+        index -= 1;
+        break;
+      }
+      if (typeIndex !== -1) row[typeIndex] = '';
+      output.push(`| ${row.join(' | ')} |`);
+      index += 1;
+    }
+  }
+  return output.join('\n');
+}
+
+function splitMarkdownTableRow(line) {
+  const trimmed = String(line || '').trim();
+  if (!trimmed.includes('|')) return null;
+  const inner = trimmed.replace(/^\|/, '').replace(/\|$/, '');
+  return inner.split('|').map((cell) => cell.trim());
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function dateOnly(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? '' : date.toISOString().slice(0, 10);
+}
+
+function yamlString(value) {
+  return JSON.stringify(String(value));
+}
+
+function stableId(note) {
+  return String(note.id || note.name).replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'note';
+}
+
+function slugify(value) {
+  const normalized = String(value || '')
+    .normalize('NFKC')
+    .trim()
+    .replace(/([\p{Ll}\p{Nd}])(\p{Lu}+)/gu, '$1-$2')
+    .toLowerCase()
+    .replace(/^_+/, '')
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || 'untitled';
+}
+
+function normalizedTitle(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizeKey(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z]/g, '');
+}
+
+function isDraft(value) {
+  return String(value || '').trim().startsWith('_');
+}
+
+function escapeTableCell(value) {
+  return String(value).replace(/\|/g, '\\|').replace(/\n+/g, '<br>');
+}
+
+function safeHref(href) {
+  return /^(https?:\/\/|mailto:|\/|\.\/|\.\.\/)/i.test(String(href || ''));
+}
+
+function extensionForMime(mime) {
+  const value = String(mime || '').toLowerCase();
+  if (value.includes('jpeg') || value.includes('jpg')) return 'jpg';
+  if (value.includes('gif')) return 'gif';
+  if (value.includes('webp')) return 'webp';
+  if (value.includes('svg')) return 'svg';
+  return 'png';
+}

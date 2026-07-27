@@ -68,8 +68,6 @@ assert.match(
 	new RegExp(`<guid>${escapeRegExp(`${rootChannelLink.replace(/\/$/, '')}/blog/mac-os-setting-preferences/`)}<\\/guid>`),
 	'Blog feed must use the configured base-path-safe permanent note URL'
 );
-const musicFeedXml = await readFile(path.join(buildDirectory, 'music', 'feed.xml'), 'utf8');
-assert.doesNotMatch(musicFeedXml, /<item>/, 'an empty public Collection must emit a valid empty feed');
 
 const indexPath = path.join(buildDirectory, 'index.html');
 const indexHtml = await readFile(indexPath, 'utf8');

@@ -6,8 +6,13 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev --host",
+		"prebuild": "node scripts/notes/build-content-from-export.mjs --in notes-export/public-notes.json --content content --clean true --if-exists true",
 		"build": "vite build",
 		"preview": "vite preview",
+		"notes:export": "node scripts/notes/export-macos-notes.mjs --out notes-export/public-notes.json",
+		"notes:build-content": "node scripts/notes/build-content-from-export.mjs --in notes-export/public-notes.json --content content --clean true",
+		"notes:publish": "node scripts/notes/publish-macos-notes.mjs",
+		"notes:publish:push": "node scripts/notes/publish-macos-notes.mjs --push true",
 		"test": "node scripts/test-safe-links.js && node scripts/test-navigation.js && node scripts/test-index-note.js && node scripts/test-index-allowlist.js && node scripts/test-content-policy.js && node scripts/test-search-feed.js && node scripts/test-markdown-features.js && node scripts/test-rss-feeds.js && node scripts/test-aliases.js && node scripts/test-publish-manifest.js",
 		"test:build": "node scripts/test-build-output.js",
 		"prepare": "svelte-kit sync",

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.guoyingwei.moire-blog-notes</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>scripts/notes/publish-macos-notes.mjs</string>
+    <string>--push</string>
+    <string>true</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/guoyingwei/MyFiles/GitHub/moire/.worktrees/blog</string>
+
+  <key>StartInterval</key>
+  <integer>600</integer>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/guoyingwei/MyFiles/GitHub/moire/.worktrees/blog/logs/launchd.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/guoyingwei/MyFiles/GitHub/moire/.worktrees/blog/logs/launchd.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+</dict>
+</plist>
