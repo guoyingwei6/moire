@@ -42,6 +42,12 @@ const assetModules = import.meta.glob('/content/**/*.{avif,gif,jpeg,jpg,png,svg,
   eager: true
 }) as Record<string, string>;
 
+const responsiveAssetModules = import.meta.glob('/content/responsive-media/*.webp', {
+  query: '?url',
+  import: 'default',
+  eager: true
+}) as Record<string, string>;
+
 const RESERVED_ROUTES = new Set([
   '/archive/',
   '/feed.xml/',
@@ -232,6 +238,37 @@ function resolveAssetHref(href: string, sourcePath: string): string {
   const assetUrl = assetModules[assetPath];
   if (!assetUrl) throw new Error(`Missing local asset ${href} referenced by ${sourcePath}`);
   return assetUrl;
+}
+
+function imageAssetPath(href: string, sourcePath: string): string | null {
+  if (/^https:/i.test(href) || /^data:/i.test(href) || /^[a-z][a-z\d+.-]*:/i.test(href)) return null;
+  if (href.startsWith('/')) return null;
+  const cleanHref = href.split(/[?#]/, 1)[0];
+  const sourceDirectory = sourcePath.slice(0, sourcePath.lastIndexOf('/'));
+  return normalizeSegments(`${sourceDirectory}/${decodeURIComponent(cleanHref)}`);
+}
+
+function resolveImageSet(href: string, sourcePath: string): { href: string; src: string; srcset: string; sizes: string } | null {
+  const assetPath = imageAssetPath(href, sourcePath);
+  if (!assetPath) return null;
+  const original = assetModules[assetPath];
+  if (!original) throw new Error(`Missing local asset ${href} referenced by ${sourcePath}`);
+  const match = assetPath.match(/^\/content\/media\/(.+)\.(?:jpe?g|png|webp)$/i);
+  if (!match) return null;
+  const stem = match[1];
+  const candidates = [640, 960, 1280, 1920]
+    .map((width) => {
+      const url = responsiveAssetModules[`/content/responsive-media/${stem}-${width}.webp`];
+      return url ? { width, url } : null;
+    })
+    .filter((candidate): candidate is { width: number; url: string } => candidate !== null);
+  if (!candidates.length) return null;
+  return {
+    href: original,
+    src: candidates[0].url,
+    srcset: candidates.map((candidate) => `${candidate.url} ${candidate.width}w`).join(', '),
+    sizes: '(max-width: 720px) calc(100vw - 2rem), 640px'
+  };
 }
 
 function buildDrafts(): DraftRecord[] {
@@ -436,6 +473,7 @@ function buildRecords(): ContentRecord[] {
         ? renderMarkdownDocument(draft.body, {
             sourcePath: draft.sourcePath,
             resolveImageHref: (href) => resolveAssetHref(href, draft.sourcePath),
+            resolveImageSet: (href) => resolveImageSet(href, draft.sourcePath),
             resolveRootHref: hrefWithBase,
             showTableOfContents
           })

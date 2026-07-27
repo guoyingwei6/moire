@@ -6,6 +6,7 @@ import { isSafeLinkHref } from './safe-link.js';
  * @typedef {{
  *   sourcePath: string,
  *   resolveImageHref: (href: string) => string,
+ *   resolveImageSet?: (href: string) => { href: string, src: string, srcset: string, sizes: string } | null,
  *   resolveRootHref: (href: string) => string,
  *   showTableOfContents: boolean
  * }} RenderMarkdownOptions
@@ -137,9 +138,16 @@ function createRenderer(options, nextHeadingId, headings) {
   const renderCode = renderer.code;
 
   renderer.image = function (token) {
+    const responsive = options.resolveImageSet?.(token.href) ?? null;
+    if (responsive) {
+      const alt = escapeHtml(token.text || '');
+      const title = token.title ? ` title="${escapeHtml(token.title)}"` : '';
+      return `<a class="image-link" href="${escapeHtml(responsive.href)}" target="_blank" rel="noreferrer"><img src="${escapeHtml(responsive.src)}" srcset="${escapeHtml(responsive.srcset)}" sizes="${escapeHtml(responsive.sizes)}" alt="${alt}"${title} loading="lazy" decoding="async"></a>`;
+    }
     const href = options.resolveImageHref(token.href);
     if (!href) return '';
-    return renderImage.call(this, { ...token, href });
+    const html = renderImage.call(this, { ...token, href });
+    return html.replace('<img ', '<img loading="lazy" decoding="async" ');
   };
 
   renderer.link = function (token) {

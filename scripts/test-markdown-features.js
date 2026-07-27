@@ -62,7 +62,7 @@ assert.match(footnotes, /href="#moire:fnref:1:1"/);
 assert.match(footnotes, /href="#moire:fnref:1:2"/);
 assert.match(footnotes, /<strong>safe<\/strong>/, 'footnote definitions should support ordinary Markdown');
 assert.match(footnotes, /href="\/moire\/guide\/"/, 'root-relative footnote links must respect the configured base path');
-assert.match(footnotes, /<img src="\/assets\/note\.png" alt="alt">/, 'footnote images must use the normal asset resolver');
+assert.match(footnotes, /<img loading="lazy" decoding="async" src="\/assets\/note\.png" alt="alt">/, 'footnote images must use the normal asset resolver');
 assert.match(footnotes, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/, 'raw HTML in footnotes must stay escaped');
 assert.doesNotMatch(footnotes, /javascript:/, 'unsafe links in footnotes must not reach rendered HTML');
 assert.match(footnotes, /missing\[\^missing\]/, 'undefined footnotes should stay visible rather than becoming broken links');

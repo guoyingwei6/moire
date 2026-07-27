@@ -112,7 +112,8 @@ assert.match(headingPageHtml, /<pre><code>defaults write <span class="code-flag"
 
 const aboutPath = path.join(buildDirectory, 'about', 'about-me', 'index.html');
 const aboutHtml = await readFile(aboutPath, 'utf8');
-assert.match(aboutHtml, /<article class="markdown-content">[\s\S]*<p><img[^>]+>\s*<img[^>]+><\/p>/, 'consecutive Apple Notes images should stay together for two-column rendering');
+assert.match(aboutHtml, /<article class="markdown-content">[\s\S]*<p><a class="image-link"[^>]+><img[^>]+srcset=[^>]+><\/a>\s*<a class="image-link"[^>]+><img[^>]+srcset=[^>]+><\/a><\/p>/, 'consecutive Apple Notes images should stay together for two-column rendering');
+assert.match(aboutHtml, /<a class="image-link" href="[^\"]+" target="_blank" rel="noreferrer"><img[^>]+srcset=/, 'responsive display images should link to the original image');
 assert.doesNotMatch(
 	aboutHtml.match(/<article class="markdown-content">[\s\S]*?<\/article>/)?.[0] ?? '',
 	/showInFooter/,
