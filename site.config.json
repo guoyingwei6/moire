@@ -19,7 +19,7 @@
     "background": "#fffef2",
     "text": "#000000",
     "secondary": "#555555",
-    "link": "#DDA832"
+    "link": "#fa2f41"
   },
   "navigation": [
     {
@@ -69,7 +69,7 @@
     "archive": true,
     "previousNext": true,
     "footer": true,
-    "metadata": true,
+    "metadata": false,
     "folderName": false
   }
 }
