@@ -421,7 +421,7 @@ function buildRecords(): ContentRecord[] {
     const showTableOfContents = Boolean(draft.sourcePath) && booleanOption(
       properties,
       ['showtableofcontents'],
-      true,
+      false,
       draft.sourcePath
     );
     searchTextByRoute.set(draft.route, searchableText(draft.body));

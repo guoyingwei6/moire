@@ -105,9 +105,8 @@ assert.match(
 	new RegExp(`<link rel="alternate" type="application/rss\\+xml" title="Blog RSS feed" href="${escapeRegExp(`${rootChannelLink.replace(/\/$/, '')}/blog/feed.xml`)}"\\s*/?>`),
 	'post metadata must advertise and correctly name its parent Collection feed'
 );
-assert.match(headingPageHtml, /<nav class="table-of-contents" aria-label="Table of contents">/, 'posts with H2-H6 headings need a prerendered TOC');
+assert.doesNotMatch(headingPageHtml, /class="table-of-contents"/, 'posts should not show the automatic table of contents by default');
 assert.match(headingPageHtml, /<h2 id="01-system-preferences">/, 'Markdown headings need deterministic safe IDs');
-assert.match(headingPageHtml, /href="#01-system-preferences"/, 'TOC links must target the prerendered heading IDs');
 
 const searchPath = path.join(buildDirectory, 'search', 'index.html');
 const searchHtml = await readFile(searchPath, 'utf8');
