@@ -138,7 +138,7 @@ function writeNote({ note, sectionSlug, outputPath, isIndex }) {
   }), note.name).trim();
   const title = isIndex ? titleForIndex(sectionSlug, note.name) : note.name;
   const body = `${!sectionSlug && isIndex ? normalizeRootIndexMarkdown(markdown) : markdown}\n`;
-  writeManagedFile(outputPath, frontmatter({ title, created: note.created, updated: note.modified }) + body, 'markdown');
+  writeManagedFile(outputPath, frontmatter({ title, created: note.created, updated: note.modified, tags: note.tags }) + body, 'markdown');
   report.notes.push({
     title: note.name,
     id: note.id,
@@ -395,11 +395,15 @@ function decodeEntities(value) {
     .replace(/&#x([\da-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)));
 }
 
-function frontmatter({ title, created, updated }) {
+function frontmatter({ title, created, updated, tags = [] }) {
   const lines = ['---'];
   if (title) lines.push(`title: ${yamlString(title)}`);
   if (created) lines.push(`created: ${dateOnly(created)}`);
   if (updated) lines.push(`updated: ${dateOnly(updated)}`);
+  const normalizedTags = [...new Set((Array.isArray(tags) ? tags : [])
+    .map((tag) => String(tag || '').trim().replace(/^#+/, ''))
+    .filter(Boolean))];
+  if (normalizedTags.length) lines.push(`tags: ${normalizedTags.map(yamlString).join(', ')}`);
   lines.push('---', '');
   return `${lines.join('\n')}\n`;
 }

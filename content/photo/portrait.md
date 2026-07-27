@@ -2,6 +2,7 @@
 title: "Portrait"
 created: 2025-10-27
 updated: 2026-07-27
+tags: "Photo"
 ---
 
 ::moire-gallery

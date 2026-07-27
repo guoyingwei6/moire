@@ -2,6 +2,7 @@
 title: "Scenery"
 created: 2023-11-01
 updated: 2025-08-27
+tags: "Photo"
 ---
 
 ::moire-gallery

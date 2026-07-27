@@ -2,6 +2,7 @@
 title: "MacOS setting preferences"
 created: 2023-09-18
 updated: 2026-07-27
+tags: "Mac", "Blog"
 ---
 
 ## 01. System Preferences

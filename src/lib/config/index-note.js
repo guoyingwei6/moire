@@ -51,7 +51,7 @@ export function parseListProperty(value) {
   if (!value) return [];
   return plainCell(value)
     .split(',')
-    .map((item) => item.trim())
+    .map((item) => item.trim().replace(/^(['"])(.*)\1$/, '$2'))
     .filter(Boolean);
 }
 

@@ -84,7 +84,7 @@ function parseFrontmatter(raw: string): { metadata: Frontmatter; body: string } 
   for (const line of match[1].split(/\r?\n/)) {
     const field = line.match(/^([A-Za-z][\w-]*):\s*(.*?)\s*$/);
     if (!field) continue;
-    metadata[field[1].toLowerCase()] = field[2].replace(/^(['"])(.*)\1$/, '$2');
+    metadata[field[1].toLowerCase()] = field[2].replace(/^(['"])([^,'"]*)\1$/, '$2');
   }
 
   return { metadata, body: raw.slice(match[0].length).trim() };
@@ -291,6 +291,7 @@ function buildDrafts(): DraftRecord[] {
     const hidden = isUnderscoreDraft(sourcePath, extracted.title);
     const { body, tags: inlineTags } = extractTags(extracted.body);
     const tags = [...new Set([
+      ...parseListProperty(metadata.tags),
       ...parseListProperty(noteConfiguration.properties.tags),
       ...inlineTags
     ])];

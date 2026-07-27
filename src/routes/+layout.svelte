@@ -7,7 +7,12 @@
 
   let { data, children } = $props();
   let menuOpen = $state(false);
-  let lightbox = $state<{ src: string; alt: string } | null>(null);
+  type LightboxImage = { src: string; alt: string };
+  let lightbox = $state<{ images: LightboxImage[]; index: number } | null>(null);
+  let touchStartX = 0;
+  let touchStartY = 0;
+  const currentLightboxImage = $derived(lightbox ? lightbox.images[lightbox.index] : null);
+  const hasMultipleLightboxImages = $derived((lightbox?.images.length ?? 0) > 1);
   const currentYear = new Date().getFullYear();
 
   const localHref = (href: string) => href.startsWith('/') ? `${base}${href}` || '/' : href;
@@ -32,11 +37,23 @@
     if (!link) return;
     const href = link.getAttribute('href');
     if (!href) return;
-    const image = link.querySelector('img');
+    const container = link.closest<HTMLElement>('.markdown-content') ?? document.body;
+    const links = [...container.querySelectorAll<HTMLAnchorElement>('a.image-link')];
+    const images = links
+      .map((item) => {
+        const source = item.getAttribute('href');
+        if (!source) return null;
+        return {
+          src: source,
+          alt: item.querySelector('img')?.getAttribute('alt') || 'Expanded image'
+        };
+      })
+      .filter((image): image is LightboxImage => image !== null);
+    const index = links.indexOf(link);
     event.preventDefault();
     lightbox = {
-      src: href,
-      alt: image?.getAttribute('alt') || 'Expanded image'
+      images: images.length ? images : [{ src: href, alt: link.querySelector('img')?.getAttribute('alt') || 'Expanded image' }],
+      index: index >= 0 ? index : 0
     };
   };
 
@@ -44,8 +61,33 @@
     lightbox = null;
   };
 
-  const closeImageLightboxOnEscape = (event: KeyboardEvent) => {
+  const showLightboxImage = (direction: -1 | 1) => {
+    if (!lightbox || lightbox.images.length < 2) return;
+    lightbox.index = (lightbox.index + direction + lightbox.images.length) % lightbox.images.length;
+  };
+
+  const handleLightboxKeydown = (event: KeyboardEvent) => {
+    if (!lightbox) return;
     if (event.key === 'Escape') closeImageLightbox();
+    else if (event.key === 'ArrowLeft') showLightboxImage(-1);
+    else if (event.key === 'ArrowRight') showLightboxImage(1);
+  };
+
+  const handleLightboxTouchStart = (event: TouchEvent) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+  };
+
+  const handleLightboxTouchEnd = (event: TouchEvent) => {
+    if (!lightbox) return;
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.3) return;
+    showLightboxImage(deltaX < 0 ? 1 : -1);
   };
 </script>
 
@@ -55,7 +97,12 @@
   <link rel="icon" href={favicon} />
 </svelte:head>
 
-<svelte:window onclick={openImageLightbox} onkeydown={closeImageLightboxOnEscape} />
+<svelte:window
+  onclick={openImageLightbox}
+  onkeydown={handleLightboxKeydown}
+  ontouchstart={handleLightboxTouchStart}
+  ontouchend={handleLightboxTouchEnd}
+/>
 
 <main
   class="site-frame"
@@ -118,7 +165,7 @@
 
   {#if data.showFooter}
     <footer class="site-footer">
-      <small>{config.author} © 2022–{currentYear}</small>
+      <small>{config.author} © 2026{currentYear > 2026 ? `–${currentYear}` : ''}</small>
       <nav aria-label="Utility navigation">
         {#each data.footerEntries as item}
           <a href={localHref(item.route)}>{item.title}</a>
@@ -140,7 +187,7 @@
   {/if}
 </main>
 
-{#if lightbox}
+{#if lightbox && currentLightboxImage}
   <div
     class="image-lightbox"
     role="dialog"
@@ -149,6 +196,11 @@
   >
     <button class="image-lightbox-backdrop" type="button" aria-label="Close image preview" onclick={closeImageLightbox}></button>
     <button class="image-lightbox-close" type="button" aria-label="Close image preview" onclick={closeImageLightbox}>×</button>
-    <img src={lightbox.src} alt={lightbox.alt} />
+    {#if hasMultipleLightboxImages}
+      <button class="image-lightbox-nav previous" type="button" aria-label="Previous image" onclick={() => showLightboxImage(-1)}>‹</button>
+      <button class="image-lightbox-nav next" type="button" aria-label="Next image" onclick={() => showLightboxImage(1)}>›</button>
+      <div class="image-lightbox-count">{lightbox.index + 1} / {lightbox.images.length}</div>
+    {/if}
+    <img src={currentLightboxImage.src} alt={currentLightboxImage.alt} />
   </div>
 {/if}

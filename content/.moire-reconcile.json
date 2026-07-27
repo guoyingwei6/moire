@@ -28,7 +28,7 @@
     {
       "path": "blog/mac-os-setting-preferences.md",
       "kind": "markdown",
-      "digest": "ec30293c8b6a194cf0ec3a0d1a76d946c5ad0069dee1d9277f9428c2c5735325"
+      "digest": "da09fb15880a146d01064b3b2723ea46eb8782678f9a848fd93bebab5acde50a"
     },
     {
       "path": "blog/症状.md",
@@ -108,12 +108,12 @@
     {
       "path": "music/boku-ga-shinou-to-omottanowa.md",
       "kind": "markdown",
-      "digest": "521897980f7b8b095d5f32275e6b616a434a7e2a7acab5004c9a8de9f11157c6"
+      "digest": "c303456ffde98d9c79e049470d1190503f35c1fc69a9aba315e677ca3b2dced6"
     },
     {
       "path": "music/first-love.md",
       "kind": "markdown",
-      "digest": "7a032526e239027d2cadccaa5428d6b2dd9ba3b40436cfa05b05284228b4d9f1"
+      "digest": "037ece357138acacc37fdf19fcd826add4950f4b7738414e07fd25408b87278e"
     },
     {
       "path": "music/index.md",
@@ -123,17 +123,17 @@
     {
       "path": "music/marry-you.md",
       "kind": "markdown",
-      "digest": "072062538a8a0859a6441a27758e1db26acf3e7cecda39536bd5e9393e514959"
+      "digest": "3767f8e8c7abde7257fb46e4ddb1cf13850402cb1d2207e24d8610b21437eb6c"
     },
     {
       "path": "photo/building.md",
       "kind": "markdown",
-      "digest": "046b55b00df402fd4e7b82d6d09fd6d0976f741b39c109e520146d98faf94b69"
+      "digest": "41c72fef85a37d4fb5a21a0f4c50d8dfb3ee16a41f84d49d04a8b8eebb9591c7"
     },
     {
       "path": "photo/food.md",
       "kind": "markdown",
-      "digest": "bea848307fc422160f6764a462f5ae80b20478ffb881d75e01c46079d9bbacf9"
+      "digest": "ce7ef7b7f9a0fdfef9705c4bd31a12e644027a6d075bb4e9313d6e35f933373a"
     },
     {
       "path": "photo/index.md",
@@ -143,27 +143,27 @@
     {
       "path": "photo/life.md",
       "kind": "markdown",
-      "digest": "859eeaea2cd726d792057db8c8375ee2a0e56b7d51624caea8df2c0f2f7707ed"
+      "digest": "84e05fc83b6cc42cb24752b8d0f8d36eee627161c39090161b02640546c445e6"
     },
     {
       "path": "photo/portrait.md",
       "kind": "markdown",
-      "digest": "4a1ba6693eb5bc3918611a34bdca4b4eb86e2198a3f52ff125c6a6a3c2d63167"
+      "digest": "cb709bf61e803387c8015a53c876d1fa236327b35a8fc4f36ef7c25e9b9b7ec9"
     },
     {
       "path": "photo/scenery.md",
       "kind": "markdown",
-      "digest": "7c9d1df3d3b48772cc6e4ac5ffb674d82b0016b62f0f7489eb9f3fc02524ef90"
+      "digest": "c7ea451d8ade44088067be14fe49631371522794fbc1ccc11250b4c6dd96872a"
     },
     {
       "path": "video/desert.md",
       "kind": "markdown",
-      "digest": "64ad5d911f47b18a85df7332dd01cda78546277caeee400f8f421a638e97cfcc"
+      "digest": "b7f36aa52e375f22a74d74506c1122a8d1a73ef8ecc02009e30846b3c0fccf1d"
     },
     {
       "path": "video/grassland.md",
       "kind": "markdown",
-      "digest": "69bd35bab293828b79ebc42f74ed9c170e8581ffad449b566f569472df84e74b"
+      "digest": "1d0f98345a30a062c30e333692bd569be0567d721381edbbe6c56d8ef32579b7"
     },
     {
       "path": "video/index.md",
@@ -173,12 +173,12 @@
     {
       "path": "video/mountain.md",
       "kind": "markdown",
-      "digest": "0f8aed4e6f7501e00ea929904c697b874e6187212c934f048c856d485df3c8d1"
+      "digest": "3152748b4efaa85d4c58f1328e07fe149c8b21b26e66df6b243c6a747c8221bd"
     },
     {
       "path": "video/sea.md",
       "kind": "markdown",
-      "digest": "50993f5fb4b052c113bbe461b90452522cce92a5244dcd580be8c55d195f95d2"
+      "digest": "01db9e57e7a3aec6aaa0b421521f7dce06d4f25c39468805ce260e6c7a765ad2"
     }
   ],
   "remove": [],
