@@ -837,6 +837,70 @@ input:focus-visible {
   font-weight: 500;
 }
 
+.settings-page {
+  max-width: 56rem;
+}
+
+.settings-page h2 {
+  margin-top: 3rem;
+}
+
+.settings-page h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.settings-note {
+  max-width: 40rem;
+  color: var(--secondary);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1.75rem;
+}
+
+.settings-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.settings-page th,
+.settings-page td {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  text-align: left;
+  vertical-align: top;
+}
+
+.settings-page th {
+  font-weight: 700;
+}
+
+.settings-page code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+}
+
+.settings-records td {
+  min-width: 9rem;
+}
+
+.settings-records small {
+  color: var(--secondary);
+}
+
+.color-chip {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-right: 0.45rem;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  vertical-align: -0.12rem;
+}
+
 @media screen and (min-width: 30em) and (max-width: 59.999em) {
   .site-frame {
     grid-template-columns: 25% 75%;

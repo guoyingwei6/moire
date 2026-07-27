@@ -222,6 +222,7 @@ const validateSettings = (value: unknown): SiteSettings => {
 };
 
 const settings = validateSettings(siteSettings);
+const defaultSettings = JSON.parse(JSON.stringify(settings)) as SiteSettings;
 
 const deploymentSiteUrl = import.meta.env.VITE_SITE_URL?.trim();
 if (deploymentSiteUrl) {
@@ -407,4 +408,23 @@ export const config = {
   autoDiscoverNavigation: rootIndex.menu === null,
   indexConfigurationIssues: rootIndex.issues,
   footerLinks
+};
+
+export const configInspection = {
+  defaults: defaultSettings,
+  rootIndex: {
+    properties: rootIndex.properties,
+    menu: rootIndex.menu,
+    issues: rootIndex.issues
+  },
+  effective: {
+    site: settings.site,
+    social: settings.social,
+    colors: settings.colors,
+    features: settings.features,
+    navigation,
+    headerNavigation,
+    footerLinks,
+    autoDiscoverNavigation: rootIndex.menu === null
+  }
 };

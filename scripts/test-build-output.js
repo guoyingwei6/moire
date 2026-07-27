@@ -136,6 +136,14 @@ assert.match(
 	'prerendered Search data must contain a base-path-safe permanent note URL'
 );
 
+const settingsPath = path.join(buildDirectory, 'settings', 'index.html');
+const settingsHtml = await readFile(settingsPath, 'utf8');
+assert.match(settingsHtml, /<h1>Settings<\/h1>/, 'expected a prerendered read-only Settings page');
+assert.match(settingsHtml, /Effective site config/, 'Settings page must show the effective site config');
+assert.match(settingsHtml, /Root index overrides/, 'Settings page must show Apple Notes root-index overrides');
+assert.match(settingsHtml, /Page metadata and effective options/, 'Settings page must show per-page metadata and options');
+assert.match(settingsHtml, /name="robots" content="noindex"/, 'Settings page should be public but not indexed');
+
 if (expectedBase) {
 	for (const file of htmlFiles) {
 		const html = await readFile(file, 'utf8');

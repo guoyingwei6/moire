@@ -49,6 +49,7 @@ const RESERVED_ROUTES = new Set([
   '/robots.txt/',
   '/rss.xml/',
   '/search/',
+  '/settings/',
   '/sitemap.xml/',
   '/tags/'
 ]);
@@ -559,6 +560,13 @@ export function getFooterEntries(): ContentSummary[] {
     .map(asSummary);
 }
 
+export function getConfigurationRecords(): ContentSummary[] {
+  return records
+    .filter((record) => !record.hidden)
+    .sort((left, right) => left.route.localeCompare(right.route))
+    .map(asSummary);
+}
+
 export function getTagGroups(): TagGroup[] {
   const groups = new Map<string, TagGroup>();
   for (const record of getPosts()) {
@@ -607,6 +615,7 @@ export function getAllPublicRoutes(): string[] {
     ...getTagGroups().map((group) => `/tags/${encodeURIComponent(group.slug)}/`),
     '/archive/',
     '/search/',
+    '/settings/',
     '/qr/',
     '/feed.xml',
     '/sitemap.xml'
