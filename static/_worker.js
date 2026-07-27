@@ -15,20 +15,15 @@ export default {
 
 async function saveSettings(request, env = {}) {
   try {
-    const password = env.SETTINGS_PASSWORD;
     const token = env.GITHUB_TOKEN;
     const repository = env.GITHUB_REPOSITORY || DEFAULT_REPOSITORY;
     const branch = env.GITHUB_BRANCH || DEFAULT_BRANCH;
 
-    if (!password || !token) {
-      return json({ error: 'Settings API is not configured. Missing SETTINGS_PASSWORD or GITHUB_TOKEN.' }, 501);
+    if (!token) {
+      return json({ error: 'Settings API is not configured. Missing GITHUB_TOKEN.' }, 501);
     }
 
     const form = await request.formData();
-    if (String(form.get('password') || '') !== String(password)) {
-      return json({ error: 'Invalid settings password.' }, 401);
-    }
-
     const current = await readConfig({ repository, branch, token });
     const next = updateConfig(current.config, form);
     const content = `${JSON.stringify(next, null, 2)}\n`;

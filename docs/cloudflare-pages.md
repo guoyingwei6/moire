@@ -19,13 +19,13 @@ Use these settings for the `blog` site:
 - Root directory: repository root
 - `VITE_SITE_URL`: not required; site domain is controlled by `/settings/` and `site.config.json`
 - `BASE_PATH`: unset
-- `SETTINGS_PASSWORD`: password for the web settings form
 - `GITHUB_TOKEN`: fine-grained GitHub token that can write repository contents
 - `GITHUB_REPOSITORY`: `guoyingwei6/moire`
 - `GITHUB_BRANCH`: `blog`
 
-`SETTINGS_PASSWORD` and `GITHUB_TOKEN` are Cloudflare environment variables.
-Do not commit them to the repository.
+`GITHUB_TOKEN` is a Cloudflare environment variable. Do not commit it to the
+repository. The settings form has no password; the API is intentionally narrow
+and only writes `site.config.json` on the `blog` branch.
 
 `pnpm build` runs the `prebuild` script first:
 

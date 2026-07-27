@@ -165,11 +165,6 @@
     </section>
 
     <section>
-      <h2>Authentication</h2>
-      <label>
-        Settings password
-        <input name="password" type="password" autocomplete="current-password" required />
-      </label>
       <button type="submit" disabled={status === 'saving'}>save</button>
       {#if message}
         <p class:success={status === 'success'} class:error={status === 'error'}>{message}</p>
