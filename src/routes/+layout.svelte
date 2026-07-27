@@ -104,7 +104,11 @@
           >{item.label}</a>
         {/each}
       </nav>
-      <small>Published with Apple Notes, GitHub and SvelteKit.</small>
+      <small>
+        Published from Apple Notes, versioned on
+        <a href="https://github.com/guoyingwei6/moire/tree/blog" target="_blank" rel="noreferrer">GitHub</a>,
+        and deployed with Cloudflare Pages.
+      </small>
     </footer>
   {/if}
 </main>
