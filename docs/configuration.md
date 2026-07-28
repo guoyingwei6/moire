@@ -4,7 +4,9 @@
 
 The public root note named `index` is the content control surface. It can hold the Home page body and the visible navigation. `site.config.json` stores site identity, colors, social links and default display switches. A present but invalid menu stops the build instead of silently widening the visible publication surface.
 
-GitHub Actions YAML is intentionally not a settings database. The workflow only checks, builds and deploys the content that the Shortcut has already exported.
+Cloudflare build settings are intentionally not a settings database. Cloudflare
+only parses, builds and deploys the snapshot that the macOS exporter has already
+pushed to the `blog` branch.
 
 ## The one root index
 
@@ -25,13 +27,26 @@ Add this table to the root `index` note:
 - `link` accepts a safe site-local path or a credential-free HTTPS URL.
 - An empty `type` means Sidebar. `header` puts the item in the top navigation. `footer` is retained for compatibility with older Montaigne index tables. This site's public About target is shown in the Sidebar and is also mirrored into the footer as `About me`; new pages can enter the footer through `showInFooter` metadata.
 
-The same three columns also form the iPhone publication allow-list. For each safe local content link, the exporter removes the leading emoji and normalizes the remaining menu label as the Apple Notes folder name. The local link supplies the repository route. The label must match exactly one path segment after normalization, so `About` plus `/about/about-me/` maps the Notes folder `About` to `content/about/`, while `Field Notes` plus `/projects/field-notes/` maps to `content/projects/field-notes/`.
+The same three columns also form the macOS export allowlist. For each safe local
+content link, the exporter removes the leading emoji and normalizes the
+remaining menu label as the Apple Notes folder name. The local link supplies the
+repository route. The label must match exactly one path segment after
+normalization, so `About` plus `/about/about-me/` maps the Notes folder `About`
+to `content/about/`, while `Field Notes` plus `/projects/field-notes/` maps to
+`content/projects/field-notes/`.
 
 Home, Tags, Archive, Search, QR and XML/text endpoints are generated routes and are not treated as Notes folders. HTTPS links are navigation only. No `source` or `path` columns, anchor notes, folder-level `index` notes or Shortcut edits are required.
 
-Because iOS exposes only a note's direct folder display name, the publication namespace must not contain another Notes folder with the same normalized name outside the selected public tree. This is an explicit owner constraint. The exporter also compares the global matching-note count with a dynamic exact-FolderEntity query and stops if it observes more than one non-empty folder with that name. It never silently merges ambiguous folders.
+The active macOS exporter reads only direct child folders of the configured
+public parent folder. A root menu entry must match one of those child folder
+names after normalization. It never broadens the publication scope by searching
+unrelated Notes folders with the same name.
 
-When a valid root menu table exists, it is authoritative: only its rows appear in Sidebar/Header navigation. This is the requested visual publication allow-list. Notes already present in Git remain directly reachable, just like Montaigne drafts, but they are not automatically inserted into the navigation. If there is no menu table, `site.config.json` plus automatic folder discovery is used for backward compatibility. If a menu table exists but is invalid, the build stops instead of falling back open.
+When a valid root menu table exists, it is authoritative: only its safe local
+section rows are exported and shown in Sidebar/Header navigation. If there is no
+menu table, `site.config.json` plus automatic folder discovery is used for
+backward compatibility. If a menu table exists but is invalid, the build stops
+instead of silently falling back to a broader publication scope.
 
 The configuration table itself is removed before the Home page Markdown renders.
 
@@ -80,18 +95,20 @@ Core properties connected in this branch:
 
 Identity and collection controls such as `pinned`, `showInMenu`, `showInFooter`, `showChildren`, `sortBy`, `layout` and `previewProps` are local to that note/index. Site identity, colors, social links and default display switches belong to `/settings/` / `site.config.json`.
 
-A folder `index` is optional. Without it, the folder still publishes and lists its notes using defaults. Creating a new ordinary note inside an already authorized folder requires no index edit and no Shortcut edit.
+A folder `index` is optional. Without it, the folder still publishes and lists
+its notes using defaults. Creating a new ordinary note inside an already
+authorized folder requires no index edit and no exporter change.
 
-## Lightweight drafts
+## Drafts
 
-Prefix an Apple Note title with `_` to make it a lightweight draft. For example `_New camera notes` becomes the direct path `/new-camera-notes/`, but is excluded from discovery surfaces including:
+Prefix an Apple Note title with `_` to keep it out of the public snapshot.
+Drafts are skipped by the macOS exporter before
+`notes-export/public-notes.json` is written, so the remote build does not create
+a page, media, Tags/Archive entry, feed item or Sitemap entry for them.
 
-- Sidebar and folder listings
-- Tags and Archive
-- RSS and Sitemap
-- footer links and previous/next navigation
-
-The direct page is deliberately still generated and carries `noindex, nofollow` for ordinary search crawlers. This is not privacy protection: the Markdown and attachments remain in the public repository and Git history once uploaded.
+This is a publication rule, not access control for content that was previously
+published. If a note or attachment already exists in Git history, removing it
+from a later snapshot does not erase that history.
 
 ## Repository fallback and Pages base path
 

@@ -4,101 +4,92 @@
 
 # Moire Blog
 
-Publish an Apple Notes folder tree as a Montaigne-style personal site.
+Turn Apple Notes into a static website that you fully control.
 
-Current production site:
+The Mac only exports public notes, GitHub versions them, and Cloudflare handles
+parsing, building, and deployment. The site borrows the folder-as-section model
+and calm reading experience of [Montaigne](https://docs.montaigne.io/), without
+depending on a Montaigne account or server.
 
-- Blog branch site: <https://moireblog.guoyingwei.top>
-- Production branch: `blog`
-- Deployment: Cloudflare Pages
+<p align="center">
+  <a href="https://moireblog.guoyingwei.top"><strong>Live site</strong></a>
+  ·
+  <a href="#quick-start"><strong>Quick start</strong></a>
+  ·
+  <a href="#documentation"><strong>Documentation</strong></a>
+</p>
 
-## Live preview
+## Preview
 
 <p align="center">
   <img src="./docs/images/homepage.jpg" alt="Moire Blog home page" width="900">
 </p>
-<p align="center"><sub>Home page</sub></p>
+<p align="center"><sub>Home page and sidebar navigation</sub></p>
 
 <p align="center">
   <img src="./docs/images/photo-section.jpg" alt="Moire Blog Photo section" width="900">
 </p>
-<p align="center"><sub>Folder-based section and title list</sub></p>
+<p align="center"><sub>A section and title list generated from an Apple Notes folder</sub></p>
 
-The current footer line is:
+## Why this project exists
+
+- **Apple Notes remains the editor:** write on iPhone or Mac and attach images,
+  recordings, and PDFs.
+- **Self-hosted publishing:** public content only passes through your Mac,
+  GitHub repository, and Cloudflare project.
+- **A lightweight Mac role:** the Mac exports one raw snapshot; it does not
+  render or build the website.
+- **Notes structure is preserved:** folders, titles, tables, lists, mono text,
+  tags, and attachments can all reach the site.
+- **Static delivery is fast:** visitors read static HTML from Cloudflare's edge;
+  the site never queries Notes at request time.
+- **Configuration is auditable:** content, settings, and publishing events have
+  Git history and can be reviewed or restored.
+
+## How it works
 
 ```text
-Published from Apple Notes, versioned on GitHub, and deployed with Cloudflare Pages.
+Apple Notes on iPhone / Mac
+              ↓ iCloud
+       read-only macOS exporter
+              ↓
+ notes-export/public-notes.json
+              ↓ git push
+       GitHub blog branch
+              ↓ automatic build
+         Cloudflare Pages
+              ↓
+   HTML / RSS / Sitemap / media
 ```
 
-## What this branch does
+| Stage | Responsible for | Not responsible for |
+| --- | --- | --- |
+| macOS | Reading one public Notes tree, creating the raw snapshot, and pushing changes | Markdown conversion, image optimization, site builds |
+| GitHub | Versioning the snapshot, code, configuration, and publication history | Reading Apple Notes directly |
+| Cloudflare | Remote parsing, responsive media, SvelteKit static builds, and edge delivery | Modifying Apple Notes |
 
-This `blog` branch is a self-hosted Apple Notes publishing pipeline. It keeps the local Mac side deliberately small:
+Once a snapshot reaches GitHub, turning off or sleeping the Mac does not affect
+the already deployed site.
 
-```text
-iPhone Apple Notes
-  -> iCloud sync
-  -> Mac Notes.app exporter
-  -> notes-export/public-notes.json on origin/blog
-  -> Cloudflare Pages runs pnpm build
-  -> SvelteKit renders the static site
-  -> https://moireblog.guoyingwei.top
+## Quick start
+
+### 1. Clone and switch to `blog`
+
+```sh
+git clone https://github.com/guoyingwei6/moire.git
+cd moire
+git checkout blog
 ```
 
-The Mac only exports a public snapshot and pushes it to GitHub. Parsing, Markdown generation, responsive images, site rendering, RSS, sitemap and deployment happen during the remote build.
+You need macOS, Notes.app, Git, Node.js, and pnpm. Fork users should replace the
+repository URL with their own.
 
-## Why navigation feels fast
+### 2. Prepare Apple Notes
 
-The published site does not query Apple Notes or a database when a visitor opens a page. Its fast path is:
-
-- SvelteKit prerenders every public route to static HTML during the Cloudflare build;
-- Cloudflare Pages serves those files from its edge network;
-- internal links use SvelteKit client-side navigation and preload route data on hover;
-- pages contain only the content they need instead of loading the entire Notes library;
-- responsive images are generated remotely, loaded lazily and decoded asynchronously;
-- fingerprinted build assets under `/_app/immutable/`—including CSS,
-  JavaScript and generated media—use a one-year `immutable` browser cache; a
-  new build changes their hashed URLs, so long caching does not make a new
-  deployment stale.
-
-The Mac is not part of the visitor request path. If the Mac is asleep after a snapshot has reached GitHub, the already deployed site remains fully available and just as fast.
-
-### Build-scaling work in this round
-
-The 2026-07-28 changes reduce repeated work during remote builds without
-changing the visual design, post order, image quality or existing URLs:
-
-- **Precomputed previous/next navigation**: each detail page used to filter and
-  sort all sibling posts again. A build now groups and sorts each section once,
-  then reads neighboring posts from a prepared index.
-- **Reusable content aggregates**: the public post list, tag groups, archive
-  groups and tag routes are computed once and shared by all generated pages.
-- **Incremental responsive images**: original-image content hashes identify
-  reusable WebP derivatives. Unchanged outputs are reused, clean Cloudflare
-  builds can restore them from Build Cache, and only new or changed images are
-  converted.
-- **Stale derivative cleanup**: deleting a source image also removes its
-  obsolete responsive WebP files from the public build directory.
-- **Regression coverage**: tests now cover initial generation, local reuse,
-  cross-build cache restoration, stale cleanup and previous/next ordering.
-
-Section pagination and a chunked Pagefind search index are intentionally
-deferred. The current content volume does not need them, while both would add
-dependencies and change navigation behavior or URLs.
-
-## Branch roles
-
-- `main`: original/upstream Moire route. It stays close to upstream and is served separately at <https://moire.guoyingwei.top>.
-- `development`: minimal title-list experiment line, served separately at <https://moires.guoyingwei.top>. It is not used by this macOS Apple Notes exporter.
-- `blog`: Montaigne-style Apple Notes folder site, exported from macOS and deployed by Cloudflare Pages.
-
-The local publish script refuses to publish unless the current Git branch is `blog`.
-
-## Apple Notes structure
-
-Create one public parent folder in Apple Notes:
+Create one parent folder that contains public content only:
 
 ```text
-guoyingwei.montaigne.io
+your.public.notes.folder
 ├── index
 ├── Blog
 ├── Photo
@@ -107,12 +98,9 @@ guoyingwei.montaigne.io
 └── About
 ```
 
-The root `index` note has two jobs:
-
-1. It provides the home page content.
-2. Its menu table controls the public section allow-list and navigation.
-
-Example root `index` menu table:
+The root must contain a note named `index`. Its body becomes the home page, and
+its menu table controls both navigation and the direct child folders that may be
+exported:
 
 ```markdown
 | menu | url | type |
@@ -127,355 +115,182 @@ Example root `index` menu table:
 | 🧑‍💻About | /about/about-me | sidebar |
 ```
 
-Only direct child folders listed by safe local menu URLs are exported. A new note inside an already listed folder publishes automatically on the next Mac sync. A new public folder needs one row in the root `index` menu table.
+Adding an ordinary note to an authorized section requires no further
+configuration. A title beginning with `_` is a lightweight draft and stays out
+of sections, Tags, Archive, RSS, and Sitemap.
 
-Draft rule: notes whose title starts with `_` are skipped before the raw snapshot is written.
+### 3. Configure Mac sync once
 
-## Site settings
-
-Global site settings live in `site.config.json`.
-
-They can also be edited online at:
-
-```text
-https://moireblog.guoyingwei.top/settings/
+```sh
+node scripts/notes/setup-macos-sync.mjs --root "your.public.notes.folder"
 ```
 
-The author name in the site footer links to this page, so the URL does not need
-to be typed manually.
+The script installs dependencies, triggers the Notes automation permission,
+installs a per-user LaunchAgent, and prints its status. It runs at login and
+every ten minutes by default; unchanged snapshots create no empty commits.
 
-The settings page can update:
+Verify locally:
 
-- site title, author, description, domain, logo emoji and right-to-left text;
-- Twitter, Instagram, GitHub, YouTube, Mastodon and public email;
-- background, text, secondary and link colors;
-- QR, tags, archive, folder name, previous/next links, footer and metadata toggles.
+```sh
+pnpm notes:publish
+pnpm notes:agent:status
+```
 
-Settings save behavior:
+After checking the snapshot, push once:
 
-- the first visit shows only the admin password form;
-- a correct password creates an eight-hour signed session, so later saves in
-  the same browser do not ask for the password again;
-- an incorrect password keeps the visitor on the sign-in page;
-- the web UI only writes `site.config.json`;
-- it never edits Apple Notes content;
-- it never edits the root `index` navigation table;
-- saving creates a GitHub commit on `blog`;
-- Cloudflare Pages then redeploys the site;
-- the settings page stays open and shows a rounded translucent toast while deployment catches up.
+```sh
+pnpm notes:publish:push
+```
 
-Cloudflare Pages needs two server-side environment variables for online saves:
+### 4. Connect Cloudflare Pages
+
+Create a Pages project with:
+
+```text
+Production branch: blog
+Build command: pnpm build
+Build output directory: build
+Root directory: repository root
+```
+
+To use the online settings page, also configure two server-only secrets:
 
 ```text
 GITHUB_TOKEN
 SETTINGS_PASSWORD
 ```
 
-Use a fine-grained GitHub token limited to this repository with Contents read/write access.
-`SETTINGS_PASSWORD` is checked only by the Cloudflare Worker. The browser
-receives an `HttpOnly`, `Secure`, `SameSite=Strict` signed session cookie, never
-the configured password.
-Do not put either value in the repo, in frontend code, or in URLs.
+Use a fine-grained `GITHUB_TOKEN` limited to Contents read/write for this
+repository. Never put the token or password in the repository, frontend code,
+or a URL. See [Cloudflare Pages deployment](./docs/cloudflare-pages.md) for the
+full deployment reference.
 
-## Rendering features
+## Core features
 
-The site is built to preserve the parts of Apple Notes that matter for this blog:
+| Capability | Current implementation |
+| --- | --- |
+| Content structure | One public parent folder; root `index` controls the home page, navigation, and publication scope; direct child folders become sections |
+| Pages | Section lists, stable note URLs, Tags, Archive, Search, RSS, Sitemap, and 404 |
+| Rich text | Headings, tables, nested lists, inline mono text, code blocks, and basic shell highlighting |
+| Images | Multiple images, source layout, side-by-side images, responsive WebP, preserved originals, lightbox, keyboard and swipe navigation |
+| Attachments | Embedded PDF preview, audio player, video player, and generic file cards |
+| Native tags | Reads real Apple Notes tags from the Notes database and builds the Tags page |
+| Link previews | Whitelisted YouTube, Apple Music, Spotify, Apple Podcasts/TV, maps, Bilibili, Xiaohongshu, GitHub, DOI, and related embeds |
+| Page options | Root, folder, and individual-note `name/value` tables with inheritance and overrides |
+| Site settings | Password-protected `/settings/` for identity, colors, social links, and display switches |
+| Publishing safety | Safe local paths only; non-`blog` branches refuse publishing; the settings API can only write `site.config.json` |
 
-- Montaigne-style left navigation and cream background.
-- Section pages such as `/blog/`, `/photo/`, `/music/`, `/video/`, `/about/`.
-- Note detail pages, for example `/blog/mac-os-setting-preferences/`.
-- Markdown generated from Notes HTML during build.
-- Tables and two-column information tables.
-- Nested lists.
-- Inline mono and mono/code blocks.
-- Basic shell highlighting for mono code blocks.
-- Multiple images per note.
-- Adjacent images can render side by side.
-- Native Apple Notes tags are exported and used by the Tags page.
-- PDF, audio, video and generic file attachments.
-- Draft notes hidden by `_` title prefix.
-- RSS feeds and sitemap.
-- Tags and archive pages, controlled by settings.
+The project intentionally does not generate generic previews for arbitrary
+URLs. A new preview type requires an explicit allowlist rule, avoiding unknown
+page fetches during local export or remote builds.
 
-## Images
+## Where configuration lives
 
-The repository keeps the original images exported from Apple Notes.
+| Source | Best used for |
+| --- | --- |
+| `/settings/` / `site.config.json` | Site title, author, domain, colors, social links, and default display switches |
+| Root `index` | Home content, Sidebar/Header/Footer navigation, and public-section allowlist |
+| Folder `index` `name/value` table | Section layout, ordering, child visibility, and section defaults |
+| Ordinary note `name/value` table | Note date, slug, aliases, navigation, metadata, and display overrides |
+| Note body | Article content, images, tags, links, and attachments |
 
-During build, `sharp` creates responsive WebP display images under
-`content/responsive-media`. These generated files are ignored by Git. Their
-source-image content hashes act as cache keys, and reusable outputs are stored
-under SvelteKit's Cloudflare build-cache directory. Later builds restore
-existing derivatives and convert only new or changed images. Builds still
-succeed when Cloudflare Build Cache is disabled, but all derivatives then need
-to be regenerated.
-
-Rendered behavior:
-
-- the page loads a smaller responsive WebP when available;
-- clicking an image opens an in-page lightbox instead of a new browser tab;
-- previous/next buttons, keyboard arrow keys and mobile swipe gestures move
-  through every image in the current note;
-- if a source image cannot be converted, the site falls back to the original.
-
-This keeps the original files available without forcing every page view to download the full iPhone original immediately.
-
-## Attachments
-
-The raw Notes snapshot can carry PDF, audio, video and other file attachments.
-The remote build decodes them into `content/media/attachments` and renders:
-
-- PDF files as an inline, lazy-loaded preview with an Open action;
-- recordings and other audio files with the native browser audio player;
-- supported video files with the native browser video player;
-- other files as a metadata card with an Open action.
-
-Attachment extraction on the Mac is limited to reading the file and adding it
-to the raw snapshot. Classification and HTML rendering happen during the remote
-build.
-
-## Link embeds
-
-Only bare links are auto-rendered as embeds or cards. Labelled links stay normal links.
-
-Auto-embed examples:
-
-```markdown
-https://photos.guoyingwei.top
-https://maps.apple.com/?ll=40.025272,116.286638&q=...
-https://www.google.com/maps/place/Beijing/@39.904211,116.407395,10z
-https://www.bilibili.com/video/BV...
-https://www.xiaohongshu.com/explore/...
-https://github.com/guoyingwei6/moire
-https://doi.org/10.1038/s41586-020-2649-2
-https://music.apple.com/...
-https://youtu.be/...
-https://open.spotify.com/...
-https://podcasts.apple.com/...
-https://tv.apple.com/...
-```
-
-Currently supported:
-
-- YouTube iframe embeds;
-- Apple Music iframe embeds;
-- Spotify iframe embeds;
-- Apple Podcasts iframe embeds;
-- Apple TV iframe embeds;
-- personal photo site card for `photos.guoyingwei.top`;
-- Apple Maps card;
-- Google Maps card;
-- Bilibili card;
-- Xiaohongshu card;
-- GitHub repository card;
-- DOI card.
-
-The project intentionally does not fetch arbitrary URL metadata during local export. Extra preview types should be added as explicit whitelist rules.
-
-## Local commands
-
-Run these from the `blog` worktree:
-
-```sh
-pnpm install
-pnpm notes:export
-pnpm notes:publish
-pnpm notes:publish:push
-pnpm notes:agent:install
-pnpm notes:agent:status
-pnpm setup:macos-sync
-pnpm notes:build-content
-pnpm build
-pnpm test
-pnpm check
-pnpm test:build
-```
-
-Command meanings:
-
-- `pnpm notes:export`: read the public Apple Notes tree and write `notes-export/public-notes.json`.
-- `pnpm notes:publish`: export and create a local commit only if the snapshot changed.
-- `pnpm notes:publish:push`: export, commit if changed, and push `origin/blog`.
-- `pnpm notes:agent:install`: install or replace the macOS LaunchAgent for automatic sync.
-- `pnpm notes:agent:status`: print the current LaunchAgent state.
-- `pnpm setup:macos-sync`: run the full macOS setup flow for this branch.
-- `pnpm notes:build-content`: regenerate `content/**` from the raw snapshot.
-- `pnpm build`: run `prebuild`, generate responsive media and build the SvelteKit static site.
-- `pnpm test`: run unit-level safety and content tests.
-- `pnpm check`: run Svelte/TypeScript checks.
-- `pnpm test:build`: inspect the generated build output.
-
-The publish script first runs `git pull --ff-only origin blog` so online settings commits are integrated before the Mac pushes a new Notes snapshot.
-
-## Automatic Mac sync
-
-For a new Mac that already has Git, Node.js and pnpm:
-
-```sh
-git clone https://github.com/guoyingwei6/moire.git
-cd moire
-git checkout blog
-node scripts/notes/setup-macos-sync.mjs
-```
-
-If dependencies are already installed, the shorter project command is:
-
-```sh
-pnpm setup:macos-sync
-```
-
-The setup script checks the branch, installs dependencies, performs one Apple
-Notes export to trigger macOS Automation permission, renders a machine-specific
-LaunchAgent plist, installs it into `~/Library/LaunchAgents/`, kickstarts it, and
-prints the current status.
-
-This Mac uses a user LaunchAgent as a simple pseudo-hook. It is not a
-long-running watcher process. `launchd` starts it after login and then starts it
-again every 10 minutes. Each run exports Apple Notes once, checks whether the raw
-snapshot changed, commits only when changed, and pushes `origin/blog`.
+Page options inherit in this order:
 
 ```text
-/Users/guoyingwei/Library/LaunchAgents/com.guoyingwei.moire-blog-notes.plist
+ordinary note > folder index > root index > site.config.json defaults
 ```
 
-It runs every 10 minutes:
+Site identity, colors, and social information are owned only by `/settings/` /
+`site.config.json`, so the next Notes sync cannot overwrite them. See
+[Apple Notes configuration](./docs/configuration.md) for the full field
+reference.
 
-```text
-/opt/homebrew/bin/node scripts/notes/publish-macos-notes.mjs --push true
-```
+## Daily publishing
 
-Current installed behavior on this Mac:
+Normal use happens entirely in Apple Notes:
 
-- LaunchAgent label: `com.guoyingwei.moire-blog-notes`
-- Trigger: `RunAtLoad=true` and `StartInterval=600`
-- Scope: user session only; it starts after the macOS user logs in, not before login
-- Normal state between runs: `state = not running`
-- Failure behavior: a failed run exits and will be tried again at the next interval
-- No-change behavior: `changed=false`, `pushed=false`, no empty commit
+1. iCloud syncs the change to the Mac.
+2. `launchd` runs the exporter on its next interval.
+3. If the snapshot changed, the publisher commits and pushes `origin/blog`.
+4. Cloudflare builds and publishes the new version.
 
-Stability model:
-
-- `launchd` is the supervisor. If one run fails, it does not keep a broken Node
-  process alive; the next scheduled run tries again.
-- The script refuses to run outside the `blog` branch, so it cannot accidentally
-  publish to `main` or `development`.
-- The script runs `git pull --ff-only origin blog` before export, so settings
-  edits made from `/settings/` are integrated before the Mac pushes a Notes
-  snapshot.
-- Only `notes-export/public-notes.json` is committed by the automatic publisher.
-  Markdown, responsive images and the final site are regenerated by Cloudflare.
-- Empty runs do not create commits.
-
-Known boundary: this is a login-session LaunchAgent, not a system daemon. If the
-Mac is off, asleep, logged out, or Notes has not synced from iCloud yet, nothing
-is pushed until the next successful run after the Mac is awake and logged in.
-
-Useful checks:
+Useful commands:
 
 ```sh
-pnpm notes:agent:status
-tail -n 100 logs/launchd.out.log
-tail -n 100 logs/launchd.err.log
-git status --short --branch
+pnpm notes:publish          # commit a changed snapshot locally
+pnpm notes:publish:push     # commit and push when changed
+pnpm notes:agent:status     # inspect automatic sync
+pnpm notes:agent:restart    # reload the LaunchAgent
+pnpm notes:agent:uninstall  # stop automatic sync
+pnpm test                   # content and security tests
+pnpm check                  # Svelte / TypeScript checks
+pnpm build                  # complete static build
+pnpm test:build             # validate generated output
 ```
 
-To stop it:
+The LaunchAgent is not a permanently running Node daemon. Each run exits, and
+macOS `launchd` starts a new run at the next interval. Failed runs are retried on
+the following interval.
 
-```sh
-pnpm notes:agent:uninstall
-```
+## Performance design
 
-To start or reload it on a Mac:
+The site feels fast because the whole delivery path is static-first, not merely
+because it uses SvelteKit:
 
-```sh
-pnpm notes:agent:install
-```
+- every public route is prerendered to static HTML at build time;
+- Cloudflare Pages serves pages and media from edge locations;
+- internal links use client-side navigation and preload destinations on hover;
+- each page carries only its own data instead of the entire notes library;
+- responsive WebP images are generated remotely and use lazy loading plus
+  asynchronous decoding;
+- content-hashed CSS, JavaScript, and derived media use one-year `immutable`
+  caching;
+- previous/next, Tags, and Archive data are computed once and reused;
+- responsive images are built incrementally by source hash and can be restored
+  across deployments through Cloudflare Build Cache.
 
-To change the interval, edit `StartInterval` in
-`scripts/notes/launchd/com.guoyingwei.moire-blog-notes.plist`, or run install
-with an environment override:
+Opening an already deployed article remains a static-file request even as the
+library grows. Remote build time is the metric to watch. Section pagination or
+a chunked Pagefind index should be added only when real scale requires them,
+instead of increasing complexity preemptively.
 
-```sh
-MOIRE_NOTES_INTERVAL=1800 pnpm notes:agent:install
-MOIRE_NOTES_INTERVAL=1800 node scripts/notes/setup-macos-sync.mjs
-```
+## Documentation
 
-`600` means 10 minutes; `1800` means 30 minutes. The install script renders the
-template with the current Node path and current worktree path, so the committed
-template is portable across machines and users.
+The README is the project home, first deployment guide, and daily entry point.
+Detailed material is separated by task:
 
-The normal no-change output is:
+| Document | Read it when |
+| --- | --- |
+| [Apple Notes → GitHub sync](./docs/apple-notes-github-sync.md) | Understanding the exporter, snapshot, LaunchAgent, logs, and migration |
+| [Content and configuration](./docs/configuration.md) | Configuring root `index`, sections, note metadata, slugs, aliases, and drafts |
+| [Cloudflare Pages deployment](./docs/cloudflare-pages.md) | Configuring builds, secrets, caching, custom domains, and online settings |
+| [Publish manifest and reconciliation](./docs/publish-manifest.md) | Debugging deletion, renaming, moving, and generated-file ownership |
+| [Montaigne feature parity](./docs/montaigne-parity.md) | Reviewing design sources, compatibility, and historical tradeoffs |
 
-```text
-changed=false
-pushed=false
-```
+`docs/montaigne-parity.md` is a design comparison and historical record, not
+the current installation entry point.
 
-## Cloudflare Pages setup
+## Branches
 
-Cloudflare Pages should use:
+| Branch | Purpose | Deployment |
+| --- | --- | --- |
+| `main` | Stays close to the original/upstream Moire line | <https://moire.guoyingwei.top> |
+| `development` | Minimal title-list line; content is synchronized from `main` | <https://moires.guoyingwei.top> |
+| `blog` | The macOS Apple Notes folder blog documented here | <https://moireblog.guoyingwei.top> |
 
-- repository: `guoyingwei6/moire`
-- production branch: `blog`
-- build command: `pnpm build`
-- output directory: `build`
-- custom domain: `moireblog.guoyingwei.top`
-- environment variables for settings access and writes: `SETTINGS_PASSWORD` and `GITHUB_TOKEN`
-- enable `Settings → Build → Build cache` to reuse responsive images across deployments
+The three deployments are isolated and do not overwrite one another. The local
+Notes publisher only permits writes to `blog`.
 
-No GitHub Actions workflow is required for this branch. Cloudflare deploys from the `blog` branch.
+## Current boundaries
 
-## Restore on another Mac
-
-Minimum path:
-
-```sh
-git clone https://github.com/guoyingwei6/moire.git
-cd moire
-git checkout blog
-node scripts/notes/setup-macos-sync.mjs
-```
-
-Prerequisites:
-
-- macOS with Notes.app signed into the iCloud account that owns the public Notes
-  folder.
-- Git credentials that can push to the target repository.
-- Node.js and pnpm installed.
-- The `blog` branch checked out.
-
-During the first run, macOS may ask whether Terminal/iTerm/Codex can control
-Notes.app. Approve it; otherwise the exporter cannot read Apple Notes.
-
-Check logs and Git status after setup:
-
-```sh
-pnpm notes:agent:status
-tail -n 100 logs/launchd.out.log
-tail -n 100 logs/launchd.err.log
-git status --short --branch
-```
-
-For another user or repository fork, update these values first:
-
-- Apple Notes root folder name:
-
-```sh
-node scripts/notes/setup-macos-sync.mjs --root "your.public.notes.folder"
-```
-
-- Git remote and branch if they are not `origin` and `blog`.
-- Cloudflare Pages project settings: production branch, build command and
-  `GITHUB_TOKEN` for `/settings/` writes.
-- Site fields in `site.config.json` or `/settings/`.
-
-## Current limits
-
-- Only direct child folders of the public Apple Notes parent folder are supported.
-- New public folders require adding a row to the root `index` menu table.
-- The trigger is a 10-minute LaunchAgent pseudo-hook, not a true Apple Notes database event.
-- Deletion, rename and move reconciliation is report-only. `content/.moire-manifest.json` records generated ownership and `content/.moire-reconcile.json` reports candidates, but cleanup deletion is not applied automatically.
-- Generic arbitrary URL preview is intentionally not implemented. Add explicit whitelist preview rules instead.
+- only direct child folders of the public parent folder become sections;
+- a new public section needs one row in the root `index` menu;
+- automation uses a scheduled LaunchAgent, not a real Notes database event hook;
+- deletion, renaming, and moving produce reconciliation reports, while
+  repository-level automatic cleanup remains deliberately conservative;
+- with large libraries, static page delivery remains fast, but pagination or a
+  split search index should be chosen from measured build times.
 
 ## License
 
-This project remains licensed under GPL-3.0.
+GPL-3.0.

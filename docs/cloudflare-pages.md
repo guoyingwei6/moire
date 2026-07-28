@@ -40,18 +40,11 @@ node scripts/notes/build-content-from-export.mjs \
 
 That means Cloudflare regenerates `content/**` from the committed raw snapshot before SvelteKit builds the static site.
 
-## Verified deployment
+## Deployment boundary
 
-Verified on 2026-07-27:
-
-- `origin/blog=60d14de0aa31c939b7150a77816f43e2cd30de2b`
-- `https://moireblog.guoyingwei.top/` returns HTTP 200
-- `/blog/` lists `症状` and `MacOS setting preferences`
-- `/blog/症状/` renders two images
-- `/photo/portrait/` renders four images
-- `/sitemap.xml` includes generated pages
-
-GitHub Actions does not deploy this branch; Cloudflare Pages listens to `blog`.
+GitHub Actions does not deploy this branch; Cloudflare Pages listens directly
+to `blog`. A successful push starts a new Cloudflare build, while `main` and
+`development` keep their own independent deployments.
 
 ## Browser cache policy
 

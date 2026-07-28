@@ -46,7 +46,10 @@ Draft rule: notes whose title starts with `_` are skipped before `notes-export/p
 - root folder metadata;
 - direct section names;
 - note title, Apple Notes ID, created/modified time;
-- HTML body exported from Notes.app.
+- HTML body exported from Notes.app;
+- native Apple Notes tags;
+- embedded image payloads and layout metadata;
+- PDF, audio, video and generic attachment payloads with MIME metadata.
 
 During build, the converter:
 
@@ -54,8 +57,12 @@ During build, the converter:
 - creates section directories like `content/blog/`;
 - creates note pages like `content/blog/mac-os-setting-preferences.md`;
 - extracts embedded base64 images into `content/media/<sha1>.<ext>`;
+- decodes non-image attachments into `content/media/attachments/`;
 - preserves image order from the exported HTML;
-- converts tables, inline mono text, and simple mono blocks into Markdown.
+- converts tables, nested lists, inline mono text, and mono blocks into
+  Markdown;
+- renders PDF, audio, video and generic attachment blocks;
+- carries native Notes tags into generated frontmatter.
 
 Stable identity is handled by:
 
