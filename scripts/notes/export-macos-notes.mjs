@@ -128,6 +128,7 @@ function attachNativeTags(snapshot, databasePath) {
     `SELECT ZNOTE1, COALESCE(ZALTTEXT, ZDISPLAYTEXT, ZTOKENCONTENTIDENTIFIER, '')`,
     'FROM ZICCLOUDSYNCINGOBJECT',
     "WHERE ZTYPEUTI1='com.apple.notes.inlinetextattachment.hashtag'",
+    'AND COALESCE(ZMARKEDFORDELETION, 0)=0',
     `AND ZNOTE1 IN (${ids.join(',')});`
   ].join('\n');
   const tagResult = spawnSync('sqlite3', [databasePath], {

@@ -41,6 +41,27 @@ assert.doesNotMatch(withoutToc, /table-of-contents/);
 assert.match(withoutToc, /<h2 id="kept-anchor">/, 'disabling the TOC must not remove permanent heading anchors');
 assert.doesNotMatch(render('# Only a page title'), /table-of-contents/, 'a document without H2-H6 headings needs no TOC');
 
+const nestedList = render(`
+- **Func key:**
+  - System Preferences > Keyboard
+`);
+assert.match(
+  nestedList,
+  /<ul>\s*<li>(?:<p>)?<strong>Func key:<\/strong>(?:<\/p>)?<ul>/,
+  'Apple Notes nested lists should remain nested'
+);
+
+const monoBlock = render(`
+\`\`\`sh
+defaults write -g NSWindowShouldDragOnGesture -bool true
+\`\`\`
+`);
+assert.match(
+  monoBlock,
+  /<pre><code>defaults write <span class="code-flag">-g<\/span> NSWindowShouldDragOnGesture/,
+  'Apple Notes mono blocks should render as highlighted fenced code blocks'
+);
+
 const footnotes = render(`
 Text[^note], repeated[^note], and a missing[^missing].
 

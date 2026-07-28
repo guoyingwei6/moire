@@ -82,7 +82,10 @@ const session = await worker.fetch(new Request(`${origin}/api/settings/session`,
 assert.equal(session.status, 200, 'the signed cookie must authenticate the session endpoint');
 assert.deepEqual(await session.json(), { authenticated: true });
 
-const tamperedCookie = `${cookie.slice(0, -1)}${cookie.endsWith('a') ? 'b' : 'a'}`;
+const [cookieName, cookieValue] = cookie.split('=', 2);
+const [expiresAt, nonce, signature] = cookieValue.split('.');
+const tamperedSignature = `${signature.startsWith('A') ? 'B' : 'A'}${signature.slice(1)}`;
+const tamperedCookie = `${cookieName}=${expiresAt}.${nonce}.${tamperedSignature}`;
 const tampered = await worker.fetch(new Request(`${origin}/api/settings/session`, {
   headers: { accept: 'application/json', cookie: tamperedCookie }
 }), env);
