@@ -4,7 +4,7 @@ The two public sites are intentionally separate:
 
 ```text
 main -> GitHub Pages      -> https://moire.guoyingwei.top
-blog -> Cloudflare Pages -> https://moires.guoyingwei.top
+blog -> Cloudflare Pages -> https://moireblog.guoyingwei.top
 ```
 
 `main` remains available for upstream/original Moire work. The macOS Apple Notes exporter pushes only `blog`.
@@ -20,7 +20,7 @@ Use these settings for the `blog` site:
 - `VITE_SITE_URL`: not required; site domain is controlled by `/settings/` and `site.config.json`
 - `BASE_PATH`: unset
 - `GITHUB_TOKEN`: fine-grained GitHub token that can write repository contents
-- `SETTINGS_PASSWORD`: admin password required to save `/settings/`
+- `SETTINGS_PASSWORD`: admin password required to sign in to `/settings/`
 - `GITHUB_REPOSITORY`: `guoyingwei6/moire`
 - `GITHUB_BRANCH`: `blog`
 
@@ -45,7 +45,7 @@ That means Cloudflare regenerates `content/**` from the committed raw snapshot b
 Verified on 2026-07-27:
 
 - `origin/blog=60d14de0aa31c939b7150a77816f43e2cd30de2b`
-- `https://moires.guoyingwei.top/` returns HTTP 200
+- `https://moireblog.guoyingwei.top/` returns HTTP 200
 - `/blog/` lists `症状` and `MacOS setting preferences`
 - `/blog/症状/` renders two images
 - `/photo/portrait/` renders four images
@@ -60,8 +60,10 @@ GitHub Actions does not deploy this branch; Cloudflare Pages listens to `blog`.
 `/api/settings`.
 
 Saving requires the admin password stored in Cloudflare as `SETTINGS_PASSWORD`.
-The password is submitted only with the save request; it is not stored in
-`site.config.json` and is not included in the static site bundle.
+After a successful sign-in, the Worker creates an eight-hour HMAC-signed
+`HttpOnly`, `Secure`, `SameSite=Strict` cookie. The configured password is not
+stored in the browser, `site.config.json`, or the static site bundle. Saves use
+the signed session and do not ask for the password again until it expires.
 
 The web form controls site-level settings:
 

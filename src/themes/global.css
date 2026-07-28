@@ -176,6 +176,15 @@ input:focus-visible {
   font-size: 0.875rem;
 }
 
+.site-footer-author {
+  color: inherit;
+}
+
+.site-footer-author:hover,
+.site-footer-author:focus-visible {
+  color: var(--accent);
+}
+
 .site-footer nav {
   display: flex;
   flex-wrap: wrap;
@@ -1147,6 +1156,59 @@ input:focus-visible {
 .settings-note {
   max-width: 40rem;
   color: var(--secondary);
+}
+
+.settings-login {
+  max-width: 24rem;
+  margin-top: 2rem;
+}
+
+.settings-login h2 {
+  margin: 0 0 1.25rem;
+}
+
+.settings-login label {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.settings-login input {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--text) 35%, transparent);
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.settings-login button {
+  padding: 0.65rem 1.1rem;
+  border: 1px solid var(--text);
+  border-radius: 0.35rem;
+  background: var(--text);
+  color: var(--page-bg);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.settings-login button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.settings-login-error {
+  margin: -0.25rem 0 1rem;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+.settings-help {
+  color: var(--secondary);
+  font-size: 0.85rem;
 }
 
 .settings-toast {

@@ -4,7 +4,7 @@ Publish an Apple Notes folder tree as a Montaigne-style personal site.
 
 Current production site:
 
-- Blog branch site: <https://moires.guoyingwei.top>
+- Blog branch site: <https://moireblog.guoyingwei.top>
 - Production branch: `blog`
 - Deployment: Cloudflare Pages
 
@@ -25,15 +25,28 @@ iPhone Apple Notes
   -> notes-export/public-notes.json on origin/blog
   -> Cloudflare Pages runs pnpm build
   -> SvelteKit renders the static site
-  -> https://moires.guoyingwei.top
+  -> https://moireblog.guoyingwei.top
 ```
 
 The Mac only exports a public snapshot and pushes it to GitHub. Parsing, Markdown generation, responsive images, site rendering, RSS, sitemap and deployment happen during the remote build.
 
+## Why navigation feels fast
+
+The published site does not query Apple Notes or a database when a visitor opens a page. Its fast path is:
+
+- SvelteKit prerenders every public route to static HTML during the Cloudflare build;
+- Cloudflare Pages serves those files from its edge network;
+- internal links use SvelteKit client-side navigation and preload route data on hover;
+- pages contain only the content they need instead of loading the entire Notes library;
+- responsive images are generated remotely, loaded lazily and decoded asynchronously;
+- fingerprinted CSS and JavaScript assets can be reused from the browser cache.
+
+The Mac is not part of the visitor request path. If the Mac is asleep after a snapshot has reached GitHub, the already deployed site remains fully available and just as fast.
+
 ## Branch roles
 
 - `main`: original/upstream Moire route. It stays close to upstream and is served separately at <https://moire.guoyingwei.top>.
-- `development`: minimal title-list experiment line. It is not used by this macOS Apple Notes exporter.
+- `development`: minimal title-list experiment line, served separately at <https://moires.guoyingwei.top>. It is not used by this macOS Apple Notes exporter.
 - `blog`: Montaigne-style Apple Notes folder site, exported from macOS and deployed by Cloudflare Pages.
 
 The local publish script refuses to publish unless the current Git branch is `blog`.
@@ -83,8 +96,11 @@ Global site settings live in `site.config.json`.
 They can also be edited online at:
 
 ```text
-https://moires.guoyingwei.top/settings/
+https://moireblog.guoyingwei.top/settings/
 ```
+
+The author name in the site footer links to this page, so the URL does not need
+to be typed manually.
 
 The settings page can update:
 
@@ -95,6 +111,10 @@ The settings page can update:
 
 Settings save behavior:
 
+- the first visit shows only the admin password form;
+- a correct password creates an eight-hour signed session, so later saves in
+  the same browser do not ask for the password again;
+- an incorrect password keeps the visitor on the sign-in page;
 - the web UI only writes `site.config.json`;
 - it never edits Apple Notes content;
 - it never edits the root `index` navigation table;
@@ -110,7 +130,9 @@ SETTINGS_PASSWORD
 ```
 
 Use a fine-grained GitHub token limited to this repository with Contents read/write access.
-`SETTINGS_PASSWORD` is the admin password required by `/settings/` before it can save changes.
+`SETTINGS_PASSWORD` is checked only by the Cloudflare Worker. The browser
+receives an `HttpOnly`, `Secure`, `SameSite=Strict` signed session cookie, never
+the configured password.
 Do not put either value in the repo, in frontend code, or in URLs.
 
 ## Rendering features
@@ -330,8 +352,8 @@ Cloudflare Pages should use:
 - production branch: `blog`
 - build command: `pnpm build`
 - output directory: `build`
-- custom domain: `moires.guoyingwei.top`
-- environment variable for settings writes: `GITHUB_TOKEN`
+- custom domain: `moireblog.guoyingwei.top`
+- environment variables for settings access and writes: `SETTINGS_PASSWORD` and `GITHUB_TOKEN`
 
 No GitHub Actions workflow is required for this branch. Cloudflare deploys from the `blog` branch.
 

@@ -161,7 +161,7 @@ function attachNativeAttachments(snapshot, databasePath, notesDirectory) {
   const query = [
     '.mode tabs',
     '.headers off',
-    `SELECT Z_PK, ZNOTE, COALESCE(ZMEDIA, 0), COALESCE(ZTYPEUTI, ZTYPEUTI1, ''), COALESCE(ZFILENAME, ''), COALESCE(ZTITLE, ZTITLE1, ZUSERTITLE, ZDISPLAYTEXT, ZALTTEXT, ''), COALESCE(ZIDENTIFIER, ''), COALESCE(ZFILESIZE, 0), COALESCE(ZDURATION, 0), COALESCE(ZWIDTH, 0), COALESCE(ZHEIGHT, 0)`,
+    `SELECT Z_PK, ZNOTE, COALESCE(ZMEDIA, 0), COALESCE(ZTYPEUTI, ZTYPEUTI1, ''), COALESCE(ZFILENAME, ''), COALESCE(ZTITLE, ZTITLE1, ZUSERTITLE, ZDISPLAYTEXT, ZALTTEXT, ''), COALESCE(ZIDENTIFIER, ''), COALESCE(ZFILESIZE, 0), COALESCE(ZDURATION, 0), COALESCE(ZWIDTH, 0), COALESCE(ZHEIGHT, 0), COALESCE(ZCREATIONDATE, 0)`,
     'FROM ZICCLOUDSYNCINGOBJECT',
     'WHERE Z_ENT=5',
     `AND ZNOTE IN (${noteIds.join(',')})`,
@@ -212,6 +212,7 @@ function attachNativeAttachments(snapshot, databasePath, notesDirectory) {
       duration: row.duration,
       width: row.width,
       height: row.height,
+      creationDate: row.creationDate,
       dataBase64: buffer.toString('base64')
     });
     note.attachments = attachments;
@@ -230,7 +231,8 @@ function parseAttachmentRow(line) {
     size,
     duration,
     width,
-    height
+    height,
+    creationDate
   ] = line.split('\t');
   return {
     pk: Number(pk),
@@ -243,7 +245,8 @@ function parseAttachmentRow(line) {
     size: Number(size) || 0,
     duration: Number(duration) || 0,
     width: Number(width) || 0,
-    height: Number(height) || 0
+    height: Number(height) || 0,
+    creationDate: Number(creationDate) || 0
   };
 }
 

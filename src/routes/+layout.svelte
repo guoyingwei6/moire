@@ -165,7 +165,10 @@
 
   {#if data.showFooter}
     <footer class="site-footer">
-      <small>{config.author} © 2026{currentYear > 2026 ? `–${currentYear}` : ''}</small>
+      <small>
+        <a class="site-footer-author" href={localHref('/settings/')}>{config.author}</a>
+        © 2026{currentYear > 2026 ? `–${currentYear}` : ''}
+      </small>
       <nav aria-label="Utility navigation">
         {#each data.footerEntries as item}
           <a href={localHref(item.route)}>{item.title}</a>

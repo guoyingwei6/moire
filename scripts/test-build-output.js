@@ -55,7 +55,7 @@ const rootChannelLink = rootFeedXml.match(/<channel>[\s\S]*?<link>([^<]+)<\/link
 assert(rootChannelLink, 'root feed must expose the configured canonical site URL');
 assert.equal(
 	rootChannelLink,
-	'https://moires.guoyingwei.top/',
+	'https://moireblog.guoyingwei.top/',
 	'site.config.json must control the canonical feed origin'
 );
 
@@ -114,6 +114,10 @@ assert.match(attachmentPageHtml, /class="moire-attachment moire-attachment-pdf"/
 assert.match(attachmentPageHtml, /<iframe src="[^"]+\.pdf" title="11060126_0159591784" loading="lazy"><\/iframe>/, 'PDF attachments should expose an inline preview iframe');
 assert.match(attachmentPageHtml, /class="moire-attachment moire-attachment-audio"/, 'recording attachments should render as audio cards');
 assert.match(attachmentPageHtml, /<audio controls preload="metadata" src="[^"]+\.m4a"><\/audio>/, 'recording attachments should expose an audio player');
+assert.ok(
+	attachmentPageHtml.indexOf('moire-attachment-audio') < attachmentPageHtml.indexOf('moire-attachment-pdf'),
+	'non-image attachments should follow their Apple Notes creation order'
+);
 
 const aboutPath = path.join(buildDirectory, 'about', 'about-me', 'index.html');
 const aboutHtml = await readFile(aboutPath, 'utf8');
@@ -151,17 +155,19 @@ const settingsHtml = await readFile(settingsPath, 'utf8');
 const workerPath = path.join(buildDirectory, '_worker.js');
 const workerJs = await readFile(workerPath, 'utf8');
 assert.match(settingsHtml, /<h1>Settings<\/h1>/, 'expected a prerendered Settings page');
-assert.match(settingsHtml, /<form class="settings-form"/, 'Settings page must expose an editable settings form');
-assert.match(settingsHtml, /name="settingsPassword"/, 'Settings page must require an admin password field before saving');
-assert.match(settingsHtml, /Effective site config/, 'Settings page must show the effective site config');
-assert.match(settingsHtml, /General Settings/, 'Settings page must include Montaigne-style general settings');
-assert.match(settingsHtml, /Social Settings/, 'Settings page must include Montaigne-style social settings');
-assert.match(settingsHtml, /Customization Settings/, 'Settings page must include Montaigne-style customization settings');
-assert.match(settingsHtml, /Navigation from root index/, 'Settings page must still show Apple Notes root-index navigation');
+assert.match(settingsHtml, /class="settings-login"/, 'Settings page must initially expose only the admin sign-in view');
+assert.match(settingsHtml, /name="settingsPassword"/, 'Settings sign-in must require an admin password');
+assert.doesNotMatch(settingsHtml, /<form class="settings-form"/, 'Settings form must stay hidden until the browser session is authenticated');
+assert.doesNotMatch(settingsHtml, /Effective site config/, 'Effective settings must stay hidden until authentication');
+assert.doesNotMatch(settingsHtml, /General Settings/, 'Editable settings must stay hidden until authentication');
+assert.doesNotMatch(settingsHtml, /Navigation from root index/, 'Navigation inspection must stay hidden until authentication');
 assert.doesNotMatch(settingsHtml, /Page metadata and effective options/, 'Settings page should stay concise and not list every page');
 assert.match(settingsHtml, /name="robots" content="noindex"/, 'Settings page should be public but not indexed');
-assert.match(workerJs, /\/api\/settings/, 'Cloudflare Pages worker must expose the settings API route');
+assert.match(indexHtml, /class="site-footer-author"[^>]+settings\/"[^>]*>YingweiGuo<\/a>/, 'the footer author must link to Settings');
+assert.match(workerJs, /\/api\/settings\/login/, 'Cloudflare Pages worker must expose the settings login route');
+assert.match(workerJs, /\/api\/settings\/session/, 'Cloudflare Pages worker must expose the settings session route');
 assert.match(workerJs, /SETTINGS_PASSWORD/, 'Settings API must require the Cloudflare SETTINGS_PASSWORD secret');
+assert.match(workerJs, /HttpOnly;\s*Secure;\s*SameSite=Strict/, 'Settings session cookie must be HttpOnly, Secure, and SameSite=Strict');
 
 if (expectedBase) {
 	for (const file of htmlFiles) {

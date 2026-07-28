@@ -1,10 +1,21 @@
 const DEFAULT_REPOSITORY = 'guoyingwei6/moire';
 const DEFAULT_BRANCH = 'blog';
 const CONFIG_PATH = 'site.config.json';
+const SESSION_COOKIE = 'moire_settings_session';
+const SESSION_TTL_SECONDS = 8 * 60 * 60;
+const SESSION_CONTEXT = 'moire-blog-settings-session-v1';
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/api/settings/login') {
+      if (request.method === 'POST') return loginSettings(request, env);
+      return json({ error: 'Use POST to sign in.' }, 405);
+    }
+    if (url.pathname === '/api/settings/session') {
+      if (request.method === 'GET') return settingsSession(request, env);
+      return json({ error: 'Use GET to check the settings session.' }, 405);
+    }
     if (url.pathname === '/api/settings') {
       if (request.method === 'POST') return saveSettings(request, env);
       return json({ error: 'Use POST to save settings.' }, 405);
@@ -15,23 +26,26 @@ export default {
 
 async function saveSettings(request, env = {}) {
   const wantsHtml = acceptsHtml(request);
+  if (!isSameOriginMutation(request)) {
+    return settingsResponse(request, wantsHtml, { error: 'Cross-origin settings requests are not allowed.' }, 403);
+  }
   try {
     const token = env.GITHUB_TOKEN;
     const password = env.SETTINGS_PASSWORD;
     const repository = env.GITHUB_REPOSITORY || DEFAULT_REPOSITORY;
     const branch = env.GITHUB_BRANCH || DEFAULT_BRANCH;
 
-    if (!token) {
-      return settingsResponse(request, wantsHtml, { error: 'Settings API is not configured. Missing GITHUB_TOKEN.' }, 501);
-    }
     if (!password) {
       return settingsResponse(request, wantsHtml, { error: 'Settings API is not configured. Missing SETTINGS_PASSWORD.' }, 501);
     }
+    if (!(await hasValidSettingsSession(request, password))) {
+      return settingsResponse(request, wantsHtml, { error: 'Your settings session has expired. Sign in again.' }, 401);
+    }
+    if (!token) {
+      return settingsResponse(request, wantsHtml, { error: 'Settings API is not configured. Missing GITHUB_TOKEN.' }, 501);
+    }
 
     const form = await request.formData();
-    if (String(form.get('settingsPassword') || '') !== String(password)) {
-      return settingsResponse(request, wantsHtml, { error: 'Invalid settings password.' }, 401);
-    }
     const current = await readConfig({ repository, branch, token });
     const next = updateConfig(current.config, form);
     const content = `${JSON.stringify(next, null, 2)}\n`;
@@ -60,6 +74,136 @@ async function saveSettings(request, env = {}) {
     const message = error instanceof Error ? error.message : 'Unknown settings error.';
     return settingsResponse(request, wantsHtml, { error: message }, 400);
   }
+}
+
+async function loginSettings(request, env = {}) {
+  const wantsHtml = acceptsHtml(request);
+  if (!isSameOriginMutation(request)) {
+    return loginResponse(request, wantsHtml, { error: 'Cross-origin settings requests are not allowed.' }, 403);
+  }
+  const password = env.SETTINGS_PASSWORD;
+  if (!password) {
+    return loginResponse(request, wantsHtml, { error: 'Settings login is not configured.' }, 501);
+  }
+
+  try {
+    const form = await request.formData();
+    const candidate = String(form.get('settingsPassword') || '');
+    if (!(await secureEqual(candidate, String(password)))) {
+      return loginResponse(request, wantsHtml, { error: 'Incorrect password.' }, 401);
+    }
+
+    const session = await createSettingsSession(String(password));
+    return loginResponse(
+      request,
+      wantsHtml,
+      { authenticated: true },
+      200,
+      settingsSessionCookie(session)
+    );
+  } catch {
+    return loginResponse(request, wantsHtml, { error: 'Unable to sign in.' }, 400);
+  }
+}
+
+async function settingsSession(request, env = {}) {
+  const password = env.SETTINGS_PASSWORD;
+  if (!password) return json({ error: 'Settings login is not configured.' }, 501);
+  const authenticated = await hasValidSettingsSession(request, String(password));
+  return json({ authenticated }, authenticated ? 200 : 401);
+}
+
+async function createSettingsSession(secret) {
+  const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
+  const nonce = crypto.randomUUID().replaceAll('-', '');
+  const payload = `${expiresAt}.${nonce}`;
+  const signature = await signSession(payload, secret);
+  return `${payload}.${signature}`;
+}
+
+async function hasValidSettingsSession(request, secret) {
+  const value = readCookie(request, SESSION_COOKIE);
+  if (!value) return false;
+  const parts = value.split('.');
+  if (parts.length !== 3) return false;
+
+  const [expiresAtText, nonce, signature] = parts;
+  if (!/^\d+$/.test(expiresAtText) || !/^[a-f0-9]{32}$/i.test(nonce) || !signature) return false;
+  const expiresAt = Number(expiresAtText);
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000)) return false;
+
+  const payload = `${expiresAtText}.${nonce}`;
+  return verifySession(payload, signature, secret);
+}
+
+async function signSession(payload, secret) {
+  const key = await sessionKey(secret, ['sign']);
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${SESSION_CONTEXT}:${payload}`));
+  return base64UrlEncode(new Uint8Array(signature));
+}
+
+async function verifySession(payload, signature, secret) {
+  let bytes;
+  try {
+    bytes = base64UrlDecode(signature);
+  } catch {
+    return false;
+  }
+  const key = await sessionKey(secret, ['verify']);
+  return crypto.subtle.verify(
+    'HMAC',
+    key,
+    bytes,
+    new TextEncoder().encode(`${SESSION_CONTEXT}:${payload}`)
+  );
+}
+
+function sessionKey(secret, usages) {
+  return crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    usages
+  );
+}
+
+async function secureEqual(left, right) {
+  const encoder = new TextEncoder();
+  const [leftHash, rightHash] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(left)),
+    crypto.subtle.digest('SHA-256', encoder.encode(right))
+  ]);
+  const leftBytes = new Uint8Array(leftHash);
+  const rightBytes = new Uint8Array(rightHash);
+  let difference = 0;
+  for (let index = 0; index < leftBytes.length; index += 1) {
+    difference |= leftBytes[index] ^ rightBytes[index];
+  }
+  return difference === 0;
+}
+
+function readCookie(request, name) {
+  const cookie = request.headers.get('cookie') || '';
+  for (const part of cookie.split(';')) {
+    const separator = part.indexOf('=');
+    if (separator < 0) continue;
+    if (part.slice(0, separator).trim() === name) {
+      return part.slice(separator + 1).trim();
+    }
+  }
+  return '';
+}
+
+function settingsSessionCookie(value) {
+  return `${SESSION_COOKIE}=${value}; Path=/api/settings; Max-Age=${SESSION_TTL_SECONDS}; HttpOnly; Secure; SameSite=Strict`;
+}
+
+function isSameOriginMutation(request) {
+  const requestOrigin = new URL(request.url).origin;
+  const origin = request.headers.get('origin');
+  const fetchSite = request.headers.get('sec-fetch-site');
+  return origin === requestOrigin && (!fetchSite || fetchSite === 'same-origin');
 }
 
 function updateConfig(config, form) {
@@ -215,7 +359,10 @@ function validateNavigation(navigation) {
 function json(body, status = 200) {
   return new Response(JSON.stringify(body, null, 2), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8' }
+    headers: {
+      'cache-control': 'no-store',
+      'content-type': 'application/json; charset=utf-8'
+    }
   });
 }
 
@@ -236,6 +383,23 @@ function settingsResponse(request, wantsHtml, body, status = 200) {
   return Response.redirect(url.toString(), 303);
 }
 
+function loginResponse(request, wantsHtml, body, status = 200, cookie = '') {
+  if (!wantsHtml) {
+    const response = json(body, status);
+    if (cookie) response.headers.set('set-cookie', cookie);
+    return response;
+  }
+
+  const url = new URL('/settings/', request.url);
+  if (body.error) url.searchParams.set('loginError', String(body.error));
+  const headers = new Headers({
+    'cache-control': 'no-store',
+    location: url.toString()
+  });
+  if (cookie) headers.set('set-cookie', cookie);
+  return new Response(null, { status: 303, headers });
+}
+
 function encodeBase64(value) {
   const bytes = new TextEncoder().encode(value);
   let binary = '';
@@ -249,4 +413,19 @@ function decodeBase64(value) {
   const binary = atob(value);
   const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   return new TextDecoder().decode(bytes);
+}
+
+function base64UrlEncode(bytes) {
+  let binary = '';
+  for (let index = 0; index < bytes.length; index += 0x8000) {
+    binary += String.fromCharCode(...bytes.slice(index, index + 0x8000));
+  }
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+}
+
+function base64UrlDecode(value) {
+  const normalized = value.replaceAll('-', '+').replaceAll('_', '/');
+  const padding = '='.repeat((4 - (normalized.length % 4)) % 4);
+  const binary = atob(`${normalized}${padding}`);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }

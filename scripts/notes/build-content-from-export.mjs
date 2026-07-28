@@ -233,10 +233,23 @@ function imageTagToMarkdown(tag, context) {
 
 function attachmentsToMarkdown(attachments, context) {
   if (!Array.isArray(attachments) || !attachments.length) return '';
-  return attachments
+  return orderAttachmentsByCreation(attachments)
     .map((attachment) => attachmentToMarkdown(attachment, context))
     .filter(Boolean)
     .join('\n\n');
+}
+
+function orderAttachmentsByCreation(attachments) {
+  const indexed = attachments.map((attachment, index) => ({ attachment, index }));
+  if (!indexed.every(({ attachment }) => Number(attachment?.creationDate) > 0)) {
+    return attachments;
+  }
+  return indexed
+    .sort((left, right) => (
+      Number(left.attachment.creationDate) - Number(right.attachment.creationDate)
+      || left.index - right.index
+    ))
+    .map(({ attachment }) => attachment);
 }
 
 function attachmentToMarkdown(attachment, context) {
