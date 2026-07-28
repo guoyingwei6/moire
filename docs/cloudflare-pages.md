@@ -20,12 +20,13 @@ Use these settings for the `blog` site:
 - `VITE_SITE_URL`: not required; site domain is controlled by `/settings/` and `site.config.json`
 - `BASE_PATH`: unset
 - `GITHUB_TOKEN`: fine-grained GitHub token that can write repository contents
+- `SETTINGS_PASSWORD`: admin password required to save `/settings/`
 - `GITHUB_REPOSITORY`: `guoyingwei6/moire`
 - `GITHUB_BRANCH`: `blog`
 
-`GITHUB_TOKEN` is a Cloudflare environment variable. Do not commit it to the
-repository. The settings form has no password; the API is intentionally narrow
-and only writes `site.config.json` on the `blog` branch.
+`GITHUB_TOKEN` and `SETTINGS_PASSWORD` are Cloudflare environment variables.
+Do not commit them to the repository, frontend code or URLs. The settings API
+still only writes `site.config.json` on the `blog` branch.
 
 `pnpm build` runs the `prebuild` script first:
 
@@ -57,6 +58,10 @@ GitHub Actions does not deploy this branch; Cloudflare Pages listens to `blog`.
 `/settings/` is an editable site settings page. It saves only
 `site.config.json` on the `blog` branch through the Cloudflare Pages Function at
 `/api/settings`.
+
+Saving requires the admin password stored in Cloudflare as `SETTINGS_PASSWORD`.
+The password is submitted only with the save request; it is not stored in
+`site.config.json` and is not included in the static site bundle.
 
 The web form controls site-level settings:
 

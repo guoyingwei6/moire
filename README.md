@@ -102,13 +102,16 @@ Settings save behavior:
 - Cloudflare Pages then redeploys the site;
 - the settings page stays open and shows a rounded translucent toast while deployment catches up.
 
-Cloudflare Pages needs one server-side environment variable for online saves:
+Cloudflare Pages needs two server-side environment variables for online saves:
 
 ```text
 GITHUB_TOKEN
+SETTINGS_PASSWORD
 ```
 
-Use a fine-grained GitHub token limited to this repository with Contents read/write access. Do not put the token in the repo, in frontend code, or in URLs.
+Use a fine-grained GitHub token limited to this repository with Contents read/write access.
+`SETTINGS_PASSWORD` is the admin password required by `/settings/` before it can save changes.
+Do not put either value in the repo, in frontend code, or in URLs.
 
 ## Rendering features
 

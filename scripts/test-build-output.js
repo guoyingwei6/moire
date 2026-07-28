@@ -152,6 +152,7 @@ const workerPath = path.join(buildDirectory, '_worker.js');
 const workerJs = await readFile(workerPath, 'utf8');
 assert.match(settingsHtml, /<h1>Settings<\/h1>/, 'expected a prerendered Settings page');
 assert.match(settingsHtml, /<form class="settings-form"/, 'Settings page must expose an editable settings form');
+assert.match(settingsHtml, /name="settingsPassword"/, 'Settings page must require an admin password field before saving');
 assert.match(settingsHtml, /Effective site config/, 'Settings page must show the effective site config');
 assert.match(settingsHtml, /General Settings/, 'Settings page must include Montaigne-style general settings');
 assert.match(settingsHtml, /Social Settings/, 'Settings page must include Montaigne-style social settings');
@@ -160,6 +161,7 @@ assert.match(settingsHtml, /Navigation from root index/, 'Settings page must sti
 assert.doesNotMatch(settingsHtml, /Page metadata and effective options/, 'Settings page should stay concise and not list every page');
 assert.match(settingsHtml, /name="robots" content="noindex"/, 'Settings page should be public but not indexed');
 assert.match(workerJs, /\/api\/settings/, 'Cloudflare Pages worker must expose the settings API route');
+assert.match(workerJs, /SETTINGS_PASSWORD/, 'Settings API must require the Cloudflare SETTINGS_PASSWORD secret');
 
 if (expectedBase) {
 	for (const file of htmlFiles) {

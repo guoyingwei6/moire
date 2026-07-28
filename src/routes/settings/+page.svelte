@@ -82,6 +82,21 @@
   </p>
 
   <form class="settings-form" method="post" action={saveEndpoint} onsubmit={handleSubmit}>
+    <section class="settings-auth">
+      <h2>Admin</h2>
+      <label>
+        Admin password
+        <input
+          name="settingsPassword"
+          type="password"
+          autocomplete="current-password"
+          required
+          placeholder="Required to save changes"
+        />
+      </label>
+      <p class="settings-help">This password is checked by Cloudflare and is never stored in the repository.</p>
+    </section>
+
     <section>
       <h2>General Settings</h2>
       <label>
