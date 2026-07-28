@@ -69,7 +69,7 @@
     "archive": true,
     "previousNext": true,
     "footer": true,
-    "metadata": true,
+    "metadata": false,
     "folderName": false
   }
 }
