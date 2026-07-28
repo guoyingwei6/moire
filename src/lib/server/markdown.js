@@ -257,6 +257,44 @@ function parseAttachmentFields(body) {
   return fields;
 }
 
+/**
+ * Marked block extensions are fragile for adjacent custom blocks here: the
+ * first attachment can render while the following block tail is parsed as a
+ * paragraph. Preprocess these internal blocks into opaque placeholders, then
+ * restore the rendered HTML after normal Markdown parsing.
+ *
+ * @param {string} markdown
+ * @param {RenderMarkdownOptions} options
+ */
+function extractAttachmentBlocks(markdown, options) {
+  /** @type {string[]} */
+  const blocks = [];
+  const body = String(markdown || '').replace(
+    /^::moire-attachment[ \t]*\n([\s\S]*?)^::[ \t]*(?:\n|$)/gm,
+    (_match, fieldsBody) => {
+      const marker = `MOIRE_ATTACHMENT_BLOCK_${blocks.length}`;
+      const fields = parseAttachmentFields(String(fieldsBody || ''));
+      blocks.push(renderAttachmentHtml(fields, options));
+      return `\n\n${marker}\n\n`;
+    }
+  );
+  return { body, blocks };
+}
+
+/**
+ * @param {string} html
+ * @param {string[]} blocks
+ */
+function restoreAttachmentBlocks(html, blocks) {
+  let output = html;
+  blocks.forEach((block, index) => {
+    const marker = `MOIRE_ATTACHMENT_BLOCK_${index}`;
+    const pattern = new RegExp(`<p>\\s*${marker}\\s*<\\/p>|${marker}`, 'g');
+    output = output.replace(pattern, block);
+  });
+  return output;
+}
+
 /** @param {string} code */
 function highlightShellCode(code) {
   return escapeHtml(code)
@@ -607,6 +645,7 @@ function createFootnoteState(definitions, options, nextHeadingId) {
  */
 export function renderMarkdownDocument(markdown, options) {
   const { markdown: body, definitions } = extractFootnoteDefinitions(markdown, options.sourcePath);
+  const attachments = extractAttachmentBlocks(body, options);
   /** @type {TableOfContentsEntry[]} */
   const headings = [];
   const headingCounts = new Map();
@@ -644,24 +683,6 @@ export function renderMarkdownDocument(markdown, options) {
         }
       },
       {
-        name: 'moireAttachment',
-        level: 'block',
-        start(source) {
-          const index = source.indexOf('::moire-attachment');
-          return index === -1 ? undefined : index;
-        },
-        tokenizer(source) {
-          const match = source.match(/^::moire-attachment[ \t]*\n([\s\S]*?)^::[ \t]*(?:\n|$)/m);
-          if (!match) return undefined;
-          const fields = parseAttachmentFields(match[1]);
-          if (!fields.href) return undefined;
-          return { type: 'moireAttachment', raw: match[0], fields };
-        },
-        renderer(token) {
-          return renderAttachmentHtml(/** @type {Record<string, string>} */ (token.fields), options);
-        }
-      },
-      {
         name: 'footnoteReference',
         level: 'inline',
         start(source) {
@@ -680,7 +701,7 @@ export function renderMarkdownDocument(markdown, options) {
     ]
   });
 
-  const html = unwrapBlockEmbeds(String(marked.parse(body)));
+  const html = restoreAttachmentBlocks(unwrapBlockEmbeds(String(marked.parse(attachments.body))), attachments.blocks);
   const toc = options.showTableOfContents ? renderTableOfContents(headings) : '';
   return `${toc}${html}${footnotes.render()}`;
 }
