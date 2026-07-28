@@ -62,6 +62,29 @@ The published site does not query Apple Notes or a database when a visitor opens
 
 The Mac is not part of the visitor request path. If the Mac is asleep after a snapshot has reached GitHub, the already deployed site remains fully available and just as fast.
 
+### Build-scaling work in this round
+
+The 2026-07-28 changes reduce repeated work during remote builds without
+changing the visual design, post order, image quality or existing URLs:
+
+- **Precomputed previous/next navigation**: each detail page used to filter and
+  sort all sibling posts again. A build now groups and sorts each section once,
+  then reads neighboring posts from a prepared index.
+- **Reusable content aggregates**: the public post list, tag groups, archive
+  groups and tag routes are computed once and shared by all generated pages.
+- **Incremental responsive images**: original-image content hashes identify
+  reusable WebP derivatives. Unchanged outputs are reused, clean Cloudflare
+  builds can restore them from Build Cache, and only new or changed images are
+  converted.
+- **Stale derivative cleanup**: deleting a source image also removes its
+  obsolete responsive WebP files from the public build directory.
+- **Regression coverage**: tests now cover initial generation, local reuse,
+  cross-build cache restoration, stale cleanup and previous/next ordering.
+
+Section pagination and a chunked Pagefind search index are intentionally
+deferred. The current content volume does not need them, while both would add
+dependencies and change navigation behavior or URLs.
+
 ## Branch roles
 
 - `main`: original/upstream Moire route. It stays close to upstream and is served separately at <https://moire.guoyingwei.top>.
@@ -178,7 +201,13 @@ The site is built to preserve the parts of Apple Notes that matter for this blog
 
 The repository keeps the original images exported from Apple Notes.
 
-During build, `sharp` creates responsive WebP display images under `content/responsive-media`. These generated files are ignored by Git and recreated by Cloudflare.
+During build, `sharp` creates responsive WebP display images under
+`content/responsive-media`. These generated files are ignored by Git. Their
+source-image content hashes act as cache keys, and reusable outputs are stored
+under SvelteKit's Cloudflare build-cache directory. Later builds restore
+existing derivatives and convert only new or changed images. Builds still
+succeed when Cloudflare Build Cache is disabled, but all derivatives then need
+to be regenerated.
 
 Rendered behavior:
 
@@ -391,6 +420,7 @@ Cloudflare Pages should use:
 - output directory: `build`
 - custom domain: `moireblog.guoyingwei.top`
 - environment variables for settings access and writes: `SETTINGS_PASSWORD` and `GITHUB_TOKEN`
+- enable `Settings → Build → Build cache` to reuse responsive images across deployments
 
 No GitHub Actions workflow is required for this branch. Cloudflare deploys from the `blog` branch.
 
