@@ -183,7 +183,10 @@ GitHub Token。`SETTINGS_PASSWORD` 只由 Cloudflare Worker 校验；浏览器�
 仓库会保留从 Apple Notes 导出的原始图片。
 
 构建时，`sharp` 会在 `content/responsive-media` 中生成用于网页显示的响应式
-WebP 图片。这些派生文件被 Git 忽略，并由 Cloudflare 在每次构建时重新生成。
+WebP 图片。这些派生文件被 Git 忽略；构建器以原图内容哈希作为缓存键，将可复用
+结果保存在 SvelteKit 的 Cloudflare 构建缓存目录中。后续构建只需恢复已有派生图，
+新增或变化的图片才重新转换。即使 Cloudflare 构建缓存未开启，构建仍能正常完成，
+只是会重新生成全部派生图。
 
 网页中的行为：
 
@@ -391,6 +394,7 @@ Cloudflare Pages 应使用：
 - 输出目录：`build`
 - 自定义域名：`moireblog.guoyingwei.top`
 - 设置访问与写入所需环境变量：`SETTINGS_PASSWORD` 和 `GITHUB_TOKEN`
+- 建议在 `Settings → Build → Build cache` 开启构建缓存，以跨部署复用响应式图片
 
 本分支不需要 GitHub Actions workflow。Cloudflare 直接从 `blog` 分支部署。
 

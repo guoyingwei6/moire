@@ -580,6 +580,76 @@ const aliasesByRoute = new Map(aliasEntries.map((entry) => [
   entry.target
 ]));
 
+type PostNeighbors = {
+  previous: ContentSummary | null;
+  next: ContentSummary | null;
+};
+
+function buildPostNeighborsIndex(): Map<string, PostNeighbors> {
+  const postsByParent = new Map<string, ContentRecord[]>();
+  for (const record of records) {
+    if (record.kind !== 'post' || !record.parentRoute || !isMenuVisible(record)) continue;
+    const siblings = postsByParent.get(record.parentRoute) ?? [];
+    siblings.push(record);
+    postsByParent.set(record.parentRoute, siblings);
+  }
+
+  const result = new Map<string, PostNeighbors>();
+  for (const [parentRoute, siblings] of postsByParent) {
+    const parent = recordsByRoute.get(parentRoute);
+    siblings.sort((left, right) => compareContent(parent?.options.sortBy ?? 'create', left, right));
+    siblings.forEach((record, index) => {
+      result.set(record.route, {
+        previous: siblings[index + 1] ? asSummary(siblings[index + 1]) : null,
+        next: index > 0 ? asSummary(siblings[index - 1]) : null
+      });
+    });
+  }
+  return result;
+}
+
+function buildTagGroupsIndex(posts: ContentRecord[]): TagGroup[] {
+  const groups = new Map<string, TagGroup>();
+  for (const record of posts) {
+    for (const tag of record.tags) {
+      const key = tag.normalize('NFC').toLocaleLowerCase();
+      const group = groups.get(key) ?? { tag, slug: tagSlug(tag), entries: [] };
+      group.entries.push(asSummary(record));
+      groups.set(key, group);
+    }
+  }
+  return [...groups.values()]
+    .sort((left, right) => right.entries.length - left.entries.length || left.tag.localeCompare(right.tag));
+}
+
+function buildArchiveGroupsIndex(posts: ContentRecord[]): ArchiveGroup[] {
+  const groups = new Map<string, ContentSummary[]>();
+  for (const record of posts) {
+    const key = record.created?.slice(0, 7) ?? 'undated';
+    const entries = groups.get(key) ?? [];
+    entries.push(asSummary(record));
+    groups.set(key, entries);
+  }
+
+  return [...groups.entries()]
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([key, entries]) => ({
+      key,
+      label: key === 'undated'
+        ? 'Undated'
+        : new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${key}-01T00:00:00Z`)),
+      entries
+    }));
+}
+
+const postNeighborsByRoute = buildPostNeighborsIndex();
+const discoverablePosts = records
+  .filter((record) => record.kind === 'post' && isDiscoverable(record))
+  .sort((left, right) => compareContent('create', left, right));
+const tagGroups = buildTagGroupsIndex(discoverablePosts);
+const tagGroupsBySlug = new Map(tagGroups.map((group) => [group.slug, group]));
+const archiveGroups = buildArchiveGroupsIndex(discoverablePosts);
+
 function findRecord(route: string): ContentRecord | null {
   const normalized = route === '/' ? '/' : `/${route.split('/').filter(Boolean).join('/')}/`;
   return recordsByRoute.get(normalized) ?? null;
@@ -623,23 +693,11 @@ export function getSearchEntries(): SearchEntry[] {
   return toSearchEntries(records, searchTextByRoute, hrefWithBase) as SearchEntry[];
 }
 
-export function getPostNeighbors(record: ContentRecord): { previous: ContentSummary | null; next: ContentSummary | null } {
+export function getPostNeighbors(record: ContentRecord): PostNeighbors {
   if (record.kind !== 'post' || !record.parentRoute || record.hidden || !record.options.showNoteNavigation) {
     return { previous: null, next: null };
   }
-  const parent = getRecord(record.parentRoute);
-  const siblings = records
-    .filter((candidate) => (
-      candidate.kind === 'post'
-      && candidate.parentRoute === record.parentRoute
-      && isMenuVisible(candidate)
-    ))
-    .sort((left, right) => compareContent(parent?.options.sortBy ?? 'create', left, right));
-  const index = siblings.findIndex((candidate) => candidate.route === record.route);
-  return {
-    previous: index >= 0 ? (siblings[index + 1] ? asSummary(siblings[index + 1]) : null) : null,
-    next: index > 0 ? asSummary(siblings[index - 1]) : null
-  };
+  return postNeighborsByRoute.get(record.route) ?? { previous: null, next: null };
 }
 
 export function getCatchAllEntries(): { path: string }[] {
@@ -650,9 +708,7 @@ export function getCatchAllEntries(): { path: string }[] {
 }
 
 export function getPosts(): ContentRecord[] {
-  return records
-    .filter((record) => record.kind === 'post' && isDiscoverable(record))
-    .sort((left, right) => compareContent('create', left, right));
+  return discoverablePosts;
 }
 
 export function getFooterEntries(): ContentSummary[] {
@@ -670,51 +726,26 @@ export function getConfigurationRecords(): ContentSummary[] {
 }
 
 export function getTagGroups(): TagGroup[] {
-  const groups = new Map<string, TagGroup>();
-  for (const record of getPosts()) {
-    for (const tag of record.tags) {
-      const key = tag.normalize('NFC').toLocaleLowerCase();
-      const group = groups.get(key) ?? { tag, slug: tagSlug(tag), entries: [] };
-      group.entries.push(asSummary(record));
-      groups.set(key, group);
-    }
-  }
-  return [...groups.values()].sort((left, right) => right.entries.length - left.entries.length || left.tag.localeCompare(right.tag));
+  return tagGroups;
 }
 
 export function getTagGroup(slug: string): TagGroup | null {
-  return getTagGroups().find((group) => group.slug === slug.normalize('NFC').toLocaleLowerCase()) ?? null;
+  return tagGroupsBySlug.get(slug.normalize('NFC').toLocaleLowerCase()) ?? null;
 }
 
 export function getTagEntries(): { tag: string }[] {
-  return getTagGroups().map((group) => ({ tag: group.slug }));
+  return tagGroups.map((group) => ({ tag: group.slug }));
 }
 
 export function getArchiveGroups(): ArchiveGroup[] {
-  const groups = new Map<string, ContentSummary[]>();
-  for (const record of getPosts()) {
-    const key = record.created?.slice(0, 7) ?? 'undated';
-    const entries = groups.get(key) ?? [];
-    entries.push(asSummary(record));
-    groups.set(key, entries);
-  }
-
-  return [...groups.entries()]
-    .sort(([left], [right]) => right.localeCompare(left))
-    .map(([key, entries]) => ({
-      key,
-      label: key === 'undated'
-        ? 'Undated'
-        : new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${key}-01T00:00:00Z`)),
-      entries
-    }));
+  return archiveGroups;
 }
 
 export function getAllPublicRoutes(): string[] {
   return [
     ...records.filter(isDiscoverable).map((record) => record.route),
     '/tags/',
-    ...getTagGroups().map((group) => `/tags/${encodeURIComponent(group.slug)}/`),
+    ...tagGroups.map((group) => `/tags/${encodeURIComponent(group.slug)}/`),
     '/archive/',
     '/search/',
     '/settings/',

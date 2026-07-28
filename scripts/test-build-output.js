@@ -107,6 +107,11 @@ assert.doesNotMatch(headingPageHtml, /class="table-of-contents"/, 'posts should 
 assert.match(headingPageHtml, /<h2 id="01-system-preferences">/, 'Markdown headings need deterministic safe IDs');
 assert.match(headingPageHtml, /<ul>\s*<li>\s*<p><strong>Func key:<\/strong><\/p>\s*<ul>/, 'Apple Notes nested lists should remain nested after export');
 assert.match(headingPageHtml, /<pre><code>defaults write <span class="code-flag">-g<\/span> NSWindowShouldDragOnGesture/, 'Apple Notes mono blocks should render as highlighted fenced code blocks');
+assert.match(
+	headingPageHtml,
+	/<a class="next" href="[^"]*blog\/症状\/"><small>Next<\/small><span>症状<\/span><\/a>/,
+	'precomputed post navigation must preserve the oldest Blog note next link'
+);
 
 const attachmentPagePath = path.join(buildDirectory, 'blog', '播客发布测试', 'index.html');
 const attachmentPageHtml = await readFile(attachmentPagePath, 'utf8');
@@ -117,6 +122,16 @@ assert.match(attachmentPageHtml, /<audio controls preload="metadata" src="[^"]+\
 assert.ok(
 	attachmentPageHtml.indexOf('moire-attachment-audio') < attachmentPageHtml.indexOf('moire-attachment-pdf'),
 	'non-image attachments should follow their Apple Notes creation order'
+);
+assert.match(
+	attachmentPageHtml,
+	/<a href="[^"]*blog\/症状\/"><small>Previous<\/small><span>症状<\/span><\/a>/,
+	'precomputed post navigation must preserve the newest Blog note previous link'
+);
+assert.doesNotMatch(
+	attachmentPageHtml,
+	/<a class="next"[^>]*><small>Next<\/small>/,
+	'the newest Blog note must not gain a next link'
 );
 
 const aboutPath = path.join(buildDirectory, 'about', 'about-me', 'index.html');

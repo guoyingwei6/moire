@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { basename, extname, join, resolve } from 'node:path';
 import convertHeic from 'heic-convert';
@@ -18,17 +18,32 @@ for (let index = 2; index < process.argv.length; index += 1) {
 const contentDir = resolve(args.get('content') || 'content');
 const mediaDir = resolve(contentDir, 'media');
 const outputDir = resolve(contentDir, 'responsive-media');
+const cacheDir = resolve(
+  args.get('cache')
+  || process.env.MOIRE_MEDIA_CACHE_DIR
+  || 'node_modules/.cache/imagetools/moire-responsive-media-v1'
+);
 const widths = [640, 960, 1280, 1920];
 const supported = new Set(['.avif', '.heic', '.heif', '.jpg', '.jpeg', '.png', '.webp']);
-const report = { mediaDir, outputDir, generated: [], skipped: [] };
+const report = {
+  mediaDir,
+  outputDir,
+  cacheDir,
+  generated: [],
+  reused: [],
+  restored: [],
+  removed: [],
+  skipped: []
+};
 
 if (!existsSync(mediaDir)) {
   console.log(JSON.stringify({ ...report, skipped: [{ reason: 'media directory does not exist' }] }, null, 2));
   process.exit(0);
 }
 
-rmSync(outputDir, { recursive: true, force: true });
 mkdirSync(outputDir, { recursive: true });
+mkdirSync(cacheDir, { recursive: true });
+const expectedOutputs = new Set();
 
 for (const entry of readdirSync(mediaDir, { withFileTypes: true })) {
   if (!entry.isFile()) continue;
@@ -61,21 +76,41 @@ for (const entry of readdirSync(mediaDir, { withFileTypes: true })) {
   const stem = basename(file, extension);
   try {
     for (const width of widths.filter((candidate) => candidate < originalWidth)) {
-      const output = join(outputDir, `${stem}-${width}.webp`);
+      const outputName = `${stem}-${width}.webp`;
+      const output = join(outputDir, outputName);
+      const cachedOutput = join(cacheDir, outputName);
+      expectedOutputs.add(basename(output));
+      const outputDetails = {
+        source: `media/${file}`,
+        output: `responsive-media/${basename(output)}`,
+        width
+      };
+      if (existsSync(output)) {
+        report.reused.push(outputDetails);
+        continue;
+      }
+      if (existsSync(cachedOutput)) {
+        copyFileSync(cachedOutput, output);
+        report.restored.push(outputDetails);
+        continue;
+      }
       await sharp(resizeInput, { unlimited: true })
         .rotate()
         .resize({ width, withoutEnlargement: true })
         .webp({ quality: 82, effort: 4 })
-        .toFile(output);
-      report.generated.push({
-        source: `media/${file}`,
-        output: `responsive-media/${basename(output)}`,
-        width
-      });
+        .toFile(cachedOutput);
+      copyFileSync(cachedOutput, output);
+      report.generated.push(outputDetails);
     }
   } catch (error) {
     report.skipped.push({ file, reason: error instanceof Error ? error.message : 'resize error' });
   }
+}
+
+for (const entry of readdirSync(outputDir, { withFileTypes: true })) {
+  if (!entry.isFile() || extname(entry.name).toLowerCase() !== '.webp' || expectedOutputs.has(entry.name)) continue;
+  rmSync(join(outputDir, entry.name), { force: true });
+  report.removed.push(`responsive-media/${entry.name}`);
 }
 
 console.log(JSON.stringify(report, null, 2));
