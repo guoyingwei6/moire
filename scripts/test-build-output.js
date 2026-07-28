@@ -168,6 +168,11 @@ assert.match(workerJs, /\/api\/settings\/login/, 'Cloudflare Pages worker must e
 assert.match(workerJs, /\/api\/settings\/session/, 'Cloudflare Pages worker must expose the settings session route');
 assert.match(workerJs, /SETTINGS_PASSWORD/, 'Settings API must require the Cloudflare SETTINGS_PASSWORD secret');
 assert.match(workerJs, /HttpOnly;\s*Secure;\s*SameSite=Strict/, 'Settings session cookie must be HttpOnly, Secure, and SameSite=Strict');
+assert.match(
+	workerJs,
+	/public, max-age=31536000, immutable/,
+	'fingerprinted SvelteKit assets must use a one-year immutable browser cache'
+);
 
 if (expectedBase) {
 	for (const file of htmlFiles) {

@@ -20,9 +20,22 @@ export default {
       if (request.method === 'POST') return saveSettings(request, env);
       return json({ error: 'Use POST to save settings.' }, 405);
     }
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    return withImmutableAssetCache(url.pathname, response);
   }
 };
+
+function withImmutableAssetCache(pathname, response) {
+  if (!response.ok || !pathname.startsWith('/_app/immutable/')) return response;
+
+  const headers = new Headers(response.headers);
+  headers.set('cache-control', 'public, max-age=31536000, immutable');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
 
 async function saveSettings(request, env = {}) {
   const wantsHtml = acceptsHtml(request);

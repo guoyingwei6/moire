@@ -53,6 +53,20 @@ Verified on 2026-07-27:
 
 GitHub Actions does not deploy this branch; Cloudflare Pages listens to `blog`.
 
+## Browser cache policy
+
+The Advanced Mode Worker adds this response header only to successful
+`/_app/immutable/*` requests:
+
+```text
+Cache-Control: public, max-age=31536000, immutable
+```
+
+SvelteKit gives those build assets, including CSS, JavaScript and generated
+media, content-hashed names, so a new deployment receives new URLs. HTML,
+settings API responses and non-fingerprinted assets keep their normal
+Cloudflare policy and are not cached for one year.
+
 ## Web settings
 
 `/settings/` is an editable site settings page. It saves only

@@ -39,7 +39,10 @@ The published site does not query Apple Notes or a database when a visitor opens
 - internal links use SvelteKit client-side navigation and preload route data on hover;
 - pages contain only the content they need instead of loading the entire Notes library;
 - responsive images are generated remotely, loaded lazily and decoded asynchronously;
-- fingerprinted CSS and JavaScript assets can be reused from the browser cache.
+- fingerprinted build assets under `/_app/immutable/`—including CSS,
+  JavaScript and generated media—use a one-year `immutable` browser cache; a
+  new build changes their hashed URLs, so long caching does not make a new
+  deployment stale.
 
 The Mac is not part of the visitor request path. If the Mac is asleep after a snapshot has reached GitHub, the already deployed site remains fully available and just as fast.
 

@@ -7,7 +7,9 @@ const env = {
   SETTINGS_PASSWORD: password,
   GITHUB_TOKEN: 'test-token',
   ASSETS: {
-    fetch: () => new Response('asset')
+    fetch: () => new Response('asset', {
+      headers: { 'cache-control': 'public, max-age=14400, must-revalidate' }
+    })
   }
 };
 
@@ -25,6 +27,23 @@ const formRequest = (pathname, value, cookie = '') => {
     body: form
   });
 };
+
+const immutableAsset = await worker.fetch(
+  new Request(`${origin}/_app/immutable/chunks/app.HASH.js`),
+  env
+);
+assert.equal(
+  immutableAsset.headers.get('cache-control'),
+  'public, max-age=31536000, immutable',
+  'fingerprinted SvelteKit assets must stay in the browser cache for one year'
+);
+
+const ordinaryAsset = await worker.fetch(new Request(`${origin}/index.html`), env);
+assert.equal(
+  ordinaryAsset.headers.get('cache-control'),
+  'public, max-age=14400, must-revalidate',
+  'HTML and non-fingerprinted assets must retain the platform cache policy'
+);
 
 const crossOriginLogin = await worker.fetch(
   new Request(`${origin}/api/settings/login`, {
