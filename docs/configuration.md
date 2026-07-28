@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="./configuration.zh-CN.md">简体中文</a> · <strong>English</strong>
+</p>
+
 # Configure the site from Apple Notes
 
 > Current implementation note: site-level settings are stored in `site.config.json` and can be edited from `/settings/`. The macOS-exported root `index` note controls navigation and content structure. Older references to iPhone Shortcut behavior describe the abandoned Shortcut route and are not required for the active `blog` deployment.

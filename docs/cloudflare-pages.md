@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="./cloudflare-pages.zh-CN.md">简体中文</a> · <strong>English</strong>
+</p>
+
 # Cloudflare Pages deployment
 
 The two public sites are intentionally separate:

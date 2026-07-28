@@ -150,7 +150,7 @@ SETTINGS_PASSWORD
 
 `GITHUB_TOKEN` 建议使用只允许当前仓库 Contents 读写的 fine-grained token。不要把
 Token 或密码写进仓库、前端代码或 URL。完整部署说明见
-[Cloudflare Pages 部署](./docs/cloudflare-pages.md)。
+[Cloudflare Pages 部署](./docs/cloudflare-pages.zh-CN.md)。
 
 ## 主要功能
 
@@ -188,7 +188,7 @@ Token 或密码写进仓库、前端代码或 URL。完整部署说明见
 
 全站身份、颜色和社交信息只由 `/settings/` / `site.config.json` 管理，不会被下一次
 Notes 同步覆盖。详细字段见
-[Apple Notes 配置参考](./docs/configuration.md)。
+[Apple Notes 配置参考](./docs/configuration.zh-CN.md)。
 
 ## 日常发布
 
@@ -239,13 +239,13 @@ README 只负责介绍、首次部署和日常入口；细节按任务拆开：
 
 | 文档 | 什么时候看 |
 | --- | --- |
-| [Apple Notes → GitHub 同步](./docs/apple-notes-github-sync.md) | 了解导出器、快照、LaunchAgent、日志和迁移 |
-| [内容与配置参考](./docs/configuration.md) | 配置根 `index`、栏目、笔记 metadata、slug、aliases 和草稿 |
-| [Cloudflare Pages 部署](./docs/cloudflare-pages.md) | 配置构建、Secret、缓存、自定义域和在线设置 |
-| [发布清单与对账](./docs/publish-manifest.md) | 调试删除、改名、移动和生成文件归属 |
-| [Montaigne 功能对照](./docs/montaigne-parity.md) | 查看设计来源、兼容范围和历史实现取舍 |
+| [Apple Notes → GitHub 同步](./docs/apple-notes-github-sync.zh-CN.md) | 了解导出器、快照、LaunchAgent、日志和迁移 |
+| [内容与配置参考](./docs/configuration.zh-CN.md) | 配置根 `index`、栏目、笔记 metadata、slug、aliases 和草稿 |
+| [Cloudflare Pages 部署](./docs/cloudflare-pages.zh-CN.md) | 配置构建、Secret、缓存、自定义域和在线设置 |
+| [发布清单与对账](./docs/publish-manifest.zh-CN.md) | 调试删除、改名、移动和生成文件归属 |
+| [Montaigne 功能对照](./docs/montaigne-parity.zh-CN.md) | 查看设计来源、兼容范围和历史实现取舍 |
 
-`docs/montaigne-parity.md` 是设计对照与历史记录，不是当前安装入口。
+`docs/montaigne-parity.zh-CN.md` 是设计对照与历史记录，不是当前安装入口。
 
 ## 三个分支
 

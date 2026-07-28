@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="./montaigne-parity.zh-CN.md">简体中文</a> · <strong>English</strong>
+</p>
+
 # Montaigne parity map
 
 > Historical design note. The active 2026-07-27 implementation uses the macOS Notes.app exporter plus LaunchAgent described in `README.md` and `docs/apple-notes-github-sync.md`. Any iPhone Shortcut contract below is retained only as prior research, not as the current publishing path.

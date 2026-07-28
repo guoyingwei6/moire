@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="./publish-manifest.zh-CN.md">简体中文</a> · <strong>English</strong>
+</p>
+
 # Managed publish manifest
 
 > Current status: the macOS exporter build step writes a managed manifest and a

@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="./apple-notes-github-sync.zh-CN.md">简体中文</a> · <strong>English</strong>
+</p>
+
 # Apple Notes to GitHub sync
 
 This document describes the currently verified `blog` branch sync path.
