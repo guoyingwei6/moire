@@ -199,11 +199,11 @@ function renderAttachmentHtml(fields, options) {
   const openLink = `<a class="attachment-open" href="${safeHref}" target="_blank" rel="noreferrer">Open</a>`;
 
   if (type === 'audio') {
-    return `<div class="moire-attachment moire-attachment-audio"><div class="attachment-main"><span class="attachment-icon" aria-hidden="true">▶</span><div><strong>${safeTitle}</strong>${safeMeta}</div></div><audio controls preload="metadata" src="${safeHref}"></audio>${openLink}</div>\n`;
+    return `<div class="moire-attachment moire-attachment-audio"><div class="attachment-main"><span class="attachment-icon" aria-hidden="true">▶</span><div><strong>${safeTitle}</strong>${safeMeta}</div>${openLink}</div><audio controls preload="metadata" src="${safeHref}"></audio></div>\n`;
   }
 
   if (type === 'video') {
-    return `<div class="moire-attachment moire-attachment-video"><div class="attachment-main"><span class="attachment-icon" aria-hidden="true">▶</span><div><strong>${safeTitle}</strong>${safeMeta}</div></div><video controls preload="metadata" src="${safeHref}"></video>${openLink}</div>\n`;
+    return `<div class="moire-attachment moire-attachment-video"><div class="attachment-main"><span class="attachment-icon" aria-hidden="true">▶</span><div><strong>${safeTitle}</strong>${safeMeta}</div>${openLink}</div><video controls preload="metadata" src="${safeHref}"></video></div>\n`;
   }
 
   if (type === 'pdf') {

@@ -134,8 +134,18 @@ assert.match(attachments, /class="moire-attachment moire-attachment-audio"/, 'au
 assert.match(attachments, /<audio controls preload="metadata" src="\/assets\/\.\.\/media\/attachments\/recording\.m4a"><\/audio>/);
 assert.match(attachments, /New Recording/);
 assert.match(attachments, /5s/);
+assert.match(
+  attachments,
+  /moire-attachment-audio"><div class="attachment-main">[\s\S]*?<a class="attachment-open"[^>]*>Open<\/a><\/div><audio/,
+  'audio Open links should stay in the card header beside the title'
+);
 assert.match(attachments, /class="moire-attachment moire-attachment-pdf"/, 'PDF attachments should render as inline previews');
 assert.match(attachments, /<iframe src="\/assets\/\.\.\/media\/attachments\/paper\.pdf" title="Paper" loading="lazy"><\/iframe>/);
+assert.match(
+  attachments,
+  /moire-attachment-pdf"><div class="attachment-main">[\s\S]*?<a class="attachment-open"[^>]*>Open<\/a><\/div><iframe/,
+  'PDF Open links should stay in the same header position as audio attachments'
+);
 
 const labelledMusic = render('[listen](https://embed.music.apple.com/cn/album/marry-you/576670451?i=576670463)');
 assert.doesNotMatch(labelledMusic, /link-embed-apple-music/, 'labelled media links should stay ordinary links');
