@@ -1,62 +1,82 @@
+<p align="center">
+  <strong>简体中文</strong> · <a href="./README.en.md">English</a>
+</p>
+
 # Moire Blog
 
-Publish an Apple Notes folder tree as a Montaigne-style personal site.
+把 Apple Notes 中的文件夹树发布成一个 Montaigne 风格的个人网站。
 
-Current production site:
+当前线上站点：
 
-- Blog branch site: <https://moireblog.guoyingwei.top>
-- Production branch: `blog`
-- Deployment: Cloudflare Pages
+- Blog 分支站点：<https://moireblog.guoyingwei.top>
+- 生产分支：`blog`
+- 部署平台：Cloudflare Pages
 
-The current footer line is:
+## 在线预览
+
+<p align="center">
+  <img src="./docs/images/homepage.jpg" alt="Moire Blog 首页" width="900">
+</p>
+<p align="center"><sub>首页</sub></p>
+
+<p align="center">
+  <img src="./docs/images/photo-section.jpg" alt="Moire Blog Photo 栏目" width="900">
+</p>
+<p align="center"><sub>由 Apple Notes 文件夹生成的栏目与标题列表</sub></p>
+
+当前页脚文案为：
 
 ```text
 Published from Apple Notes, versioned on GitHub, and deployed with Cloudflare Pages.
 ```
 
-## What this branch does
+## 这个分支做什么
 
-This `blog` branch is a self-hosted Apple Notes publishing pipeline. It keeps the local Mac side deliberately small:
+`blog` 分支是一套自托管的 Apple Notes 发布流程，并且刻意让 Mac
+本地端保持轻量：
 
 ```text
 iPhone Apple Notes
-  -> iCloud sync
-  -> Mac Notes.app exporter
-  -> notes-export/public-notes.json on origin/blog
-  -> Cloudflare Pages runs pnpm build
-  -> SvelteKit renders the static site
+  -> iCloud 同步
+  -> Mac Notes.app 导出器
+  -> origin/blog 上的 notes-export/public-notes.json
+  -> Cloudflare Pages 运行 pnpm build
+  -> SvelteKit 生成静态网站
   -> https://moireblog.guoyingwei.top
 ```
 
-The Mac only exports a public snapshot and pushes it to GitHub. Parsing, Markdown generation, responsive images, site rendering, RSS, sitemap and deployment happen during the remote build.
+Mac 只负责导出公开快照并推送到 GitHub。内容解析、Markdown
+生成、响应式图片、网站渲染、RSS、Sitemap 和部署都在远程构建阶段完成。
 
-## Why navigation feels fast
+## 为什么页面切换很快
 
-The published site does not query Apple Notes or a database when a visitor opens a page. Its fast path is:
+访客打开页面时，网站不会查询 Apple Notes 或数据库。当前的快速访问路径是：
 
-- SvelteKit prerenders every public route to static HTML during the Cloudflare build;
-- Cloudflare Pages serves those files from its edge network;
-- internal links use SvelteKit client-side navigation and preload route data on hover;
-- pages contain only the content they need instead of loading the entire Notes library;
-- responsive images are generated remotely, loaded lazily and decoded asynchronously;
-- fingerprinted build assets under `/_app/immutable/`—including CSS,
-  JavaScript and generated media—use a one-year `immutable` browser cache; a
-  new build changes their hashed URLs, so long caching does not make a new
-  deployment stale.
+- Cloudflare 构建时由 SvelteKit 把每个公开路由预渲染成静态 HTML；
+- Cloudflare Pages 从边缘网络直接提供这些文件；
+- 站内链接使用 SvelteKit 客户端导航，并在鼠标悬停时预加载路由数据；
+- 每个页面只携带自身需要的内容，不会加载整个 Notes 笔记库；
+- 响应式图片在远程生成，并使用延迟加载和异步解码；
+- `/_app/immutable/` 下带内容哈希的 CSS、JavaScript 和生成媒体使用一年的
+  `immutable` 浏览器缓存；新构建会产生新的哈希 URL，因此长缓存不会让新部署失效。
 
-The Mac is not part of the visitor request path. If the Mac is asleep after a snapshot has reached GitHub, the already deployed site remains fully available and just as fast.
+Mac 不在访客的请求链路中。只要快照已经到达 GitHub，即使 Mac
+之后休眠，已部署的网站仍然可以正常、快速地访问。
 
-## Branch roles
+## 三个分支的职责
 
-- `main`: original/upstream Moire route. It stays close to upstream and is served separately at <https://moire.guoyingwei.top>.
-- `development`: minimal title-list experiment line, served separately at <https://moires.guoyingwei.top>. It is not used by this macOS Apple Notes exporter.
-- `blog`: Montaigne-style Apple Notes folder site, exported from macOS and deployed by Cloudflare Pages.
+- `main`：原版/上游 Moire 路线，尽量保持与上游接近，独立部署在
+  <https://moire.guoyingwei.top>。
+- `development`：极简标题列表实验路线，独立部署在
+  <https://moires.guoyingwei.top>；它不使用本分支的 macOS Apple Notes 导出器。
+- `blog`：Montaigne 风格的 Apple Notes 文件夹网站，从 macOS 导出并由
+  Cloudflare Pages 部署。
 
-The local publish script refuses to publish unless the current Git branch is `blog`.
+本地发布脚本会检查当前 Git 分支；不在 `blog` 分支时会拒绝发布。
 
-## Apple Notes structure
+## Apple Notes 目录结构
 
-Create one public parent folder in Apple Notes:
+在 Apple Notes 中建立一个公开父文件夹：
 
 ```text
 guoyingwei.montaigne.io
@@ -68,12 +88,12 @@ guoyingwei.montaigne.io
 └── About
 ```
 
-The root `index` note has two jobs:
+根目录的 `index` 笔记承担两个任务：
 
-1. It provides the home page content.
-2. Its menu table controls the public section allow-list and navigation.
+1. 提供首页内容。
+2. 通过菜单表格控制允许公开的栏目和网站导航。
 
-Example root `index` menu table:
+根 `index` 菜单表示例：
 
 ```markdown
 | menu | url | type |
@@ -88,93 +108,110 @@ Example root `index` menu table:
 | 🧑‍💻About | /about/about-me | sidebar |
 ```
 
-Only direct child folders listed by safe local menu URLs are exported. A new note inside an already listed folder publishes automatically on the next Mac sync. A new public folder needs one row in the root `index` menu table.
+只有表格中使用安全本地 URL 列出的直接子文件夹会被导出。已列出的文件夹中新建
+笔记，会在 Mac 下次同步时自动发布；新建公开栏目时，只需在根 `index`
+菜单表中增加一行。
 
-Draft rule: notes whose title starts with `_` are skipped before the raw snapshot is written.
+草稿规则：标题以下划线 `_` 开头的笔记，会在写入原始快照前被跳过。
 
-## Site settings
+## 网站设置
 
-Global site settings live in `site.config.json`.
+全站设置保存在 `site.config.json`。
 
-They can also be edited online at:
+也可以在线修改：
 
 ```text
 https://moireblog.guoyingwei.top/settings/
 ```
 
-The author name in the site footer links to this page, so the URL does not need
-to be typed manually.
+网站页脚中的作者名会链接到设置页，因此不需要手动输入地址。
 
-The settings page can update:
+设置页可以修改：
 
-- site title, author, description, domain, logo emoji and right-to-left text;
-- Twitter, Instagram, GitHub, YouTube, Mastodon and public email;
-- background, text, secondary and link colors;
-- QR, tags, archive, folder name, previous/next links, footer and metadata toggles.
+- 网站标题、作者、描述、域名、Logo Emoji 和从右向左文本；
+- Twitter、Instagram、GitHub、YouTube、Mastodon 和公开邮箱；
+- 背景色、正文色、次要文字色和链接色；
+- 二维码、Tags、Archive、文件夹名、上一篇/下一篇、页脚和元数据开关。
 
-Settings save behavior:
+保存设置时：
 
-- the first visit shows only the admin password form;
-- a correct password creates an eight-hour signed session, so later saves in
-  the same browser do not ask for the password again;
-- an incorrect password keeps the visitor on the sign-in page;
-- the web UI only writes `site.config.json`;
-- it never edits Apple Notes content;
-- it never edits the root `index` navigation table;
-- saving creates a GitHub commit on `blog`;
-- Cloudflare Pages then redeploys the site;
-- the settings page stays open and shows a rounded translucent toast while deployment catches up.
+- 首次访问只显示管理员密码表单；
+- 密码正确后创建一个有效期八小时的签名会话，同一浏览器后续保存不再重复输入密码；
+- 密码错误时停留在登录页；
+- 网页设置只会修改 `site.config.json`；
+- 不会修改 Apple Notes 内容；
+- 不会修改根 `index` 导航表；
+- 保存会在 `blog` 分支创建一次 GitHub 提交；
+- 随后 Cloudflare Pages 自动重新部署；
+- 设置页保持打开，并在部署生效前显示圆角半透明提示。
 
-Cloudflare Pages needs two server-side environment variables for online saves:
+Cloudflare Pages 需要两个仅服务端可见的环境变量：
 
 ```text
 GITHUB_TOKEN
 SETTINGS_PASSWORD
 ```
 
-Use a fine-grained GitHub token limited to this repository with Contents read/write access.
-`SETTINGS_PASSWORD` is checked only by the Cloudflare Worker. The browser
-receives an `HttpOnly`, `Secure`, `SameSite=Strict` signed session cookie, never
-the configured password.
-Do not put either value in the repo, in frontend code, or in URLs.
+`GITHUB_TOKEN` 应使用仅限本仓库、只授予 Contents 读写权限的 fine-grained
+GitHub Token。`SETTINGS_PASSWORD` 只由 Cloudflare Worker 校验；浏览器收到的是
+`HttpOnly`、`Secure`、`SameSite=Strict` 的签名会话 Cookie，不会收到配置中的密码。
 
-## Rendering features
+不要把这两个值写入仓库、前端代码或 URL。
 
-The site is built to preserve the parts of Apple Notes that matter for this blog:
+## 渲染能力
 
-- Montaigne-style left navigation and cream background.
-- Section pages such as `/blog/`, `/photo/`, `/music/`, `/video/`, `/about/`.
-- Note detail pages, for example `/blog/mac-os-setting-preferences/`.
-- Markdown generated from Notes HTML during build.
-- Tables and two-column information tables.
-- Nested lists.
-- Inline mono and mono/code blocks.
-- Basic shell highlighting for mono code blocks.
-- Multiple images per note.
-- Adjacent images can render side by side.
-- Draft notes hidden by `_` title prefix.
-- RSS feeds and sitemap.
-- Tags and archive pages, controlled by settings.
+网站会尽量保留 Apple Notes 中适合博客展示的结构：
 
-## Images
+- Montaigne 风格的左侧导航和奶油色背景；
+- `/blog/`、`/photo/`、`/music/`、`/video/`、`/about/` 等栏目页；
+- `/blog/mac-os-setting-preferences/` 这样的笔记详情页；
+- 构建时把 Notes HTML 转换为 Markdown；
+- 普通表格和两列信息表；
+- 多层嵌套列表；
+- 行内等宽文本和 Mono/代码块；
+- Mono 代码块的基础 Shell 高亮；
+- 单篇笔记包含多张图片；
+- 相邻图片可并排显示；
+- 导出 Apple Notes 原生标签，并用于 Tags 页面；
+- PDF、音频、视频和普通文件附件；
+- 标题以 `_` 开头的草稿不会发布；
+- RSS Feed 和 Sitemap；
+- 可由设置控制的 Tags 与 Archive 页面。
 
-The repository keeps the original images exported from Apple Notes.
+## 图片
 
-During build, `sharp` creates responsive WebP display images under `content/responsive-media`. These generated files are ignored by Git and recreated by Cloudflare.
+仓库会保留从 Apple Notes 导出的原始图片。
 
-Rendered behavior:
+构建时，`sharp` 会在 `content/responsive-media` 中生成用于网页显示的响应式
+WebP 图片。这些派生文件被 Git 忽略，并由 Cloudflare 在每次构建时重新生成。
 
-- the page loads a smaller responsive WebP when available;
-- clicking the image opens the original exported image;
-- if a source image cannot be converted, the site falls back to the original.
+网页中的行为：
 
-This keeps the original files available without forcing every page view to download the full iPhone original immediately.
+- 有派生图时，页面先加载体积较小的响应式 WebP；
+- 点击图片会在当前页面打开大图浮层；
+- 大图浮层支持左右按钮、键盘方向键和手机左右滑动浏览同一篇笔记中的图片；
+- 无法转换的源图片会回退到原始文件。
 
-## Link embeds
+这样既保留了原始图片，也避免每次打开页面都直接下载完整的 iPhone 原图。
 
-Only bare links are auto-rendered as embeds or cards. Labelled links stay normal links.
+## 附件
 
-Auto-embed examples:
+原始 Notes 快照可以携带 PDF、音频、视频和其他文件附件。远程构建会把它们解码
+到 `content/media/attachments`，并按类型渲染：
+
+- PDF：延迟加载的内嵌预览，并提供 Open 按钮；
+- 录音和其他音频：浏览器原生音频播放器；
+- 支持的视频：浏览器原生视频播放器；
+- 其他文件：显示文件信息和 Open 按钮的附件卡片。
+
+Mac 端只读取附件并将其加入原始快照；附件分类和 HTML 渲染都在远程构建阶段完成。
+
+## 链接预览与嵌入
+
+只有独占一行的裸链接会自动转换成嵌入模块或卡片；带说明文字的 Markdown
+链接仍按普通链接显示。
+
+自动预览示例：
 
 ```markdown
 https://photos.guoyingwei.top
@@ -191,26 +228,27 @@ https://podcasts.apple.com/...
 https://tv.apple.com/...
 ```
 
-Currently supported:
+当前支持：
 
-- YouTube iframe embeds;
-- Apple Music iframe embeds;
-- Spotify iframe embeds;
-- Apple Podcasts iframe embeds;
-- Apple TV iframe embeds;
-- personal photo site card for `photos.guoyingwei.top`;
-- Apple Maps card;
-- Google Maps card;
-- Bilibili card;
-- Xiaohongshu card;
-- GitHub repository card;
-- DOI card.
+- YouTube iframe；
+- Apple Music iframe；
+- Spotify iframe；
+- Apple Podcasts iframe；
+- Apple TV iframe；
+- `photos.guoyingwei.top` 个人照片站卡片；
+- Apple Maps 卡片；
+- Google Maps 卡片；
+- Bilibili 卡片；
+- 小红书卡片；
+- GitHub 仓库卡片；
+- DOI 卡片。
 
-The project intentionally does not fetch arbitrary URL metadata during local export. Extra preview types should be added as explicit whitelist rules.
+本项目不会在本地导出时抓取任意网址的元数据。需要增加新的预览类型时，应添加
+明确的白名单规则。
 
-## Local commands
+## 本地命令
 
-Run these from the `blog` worktree:
+在 `blog` worktree 中运行：
 
 ```sh
 pnpm install
@@ -227,25 +265,27 @@ pnpm check
 pnpm test:build
 ```
 
-Command meanings:
+命令说明：
 
-- `pnpm notes:export`: read the public Apple Notes tree and write `notes-export/public-notes.json`.
-- `pnpm notes:publish`: export and create a local commit only if the snapshot changed.
-- `pnpm notes:publish:push`: export, commit if changed, and push `origin/blog`.
-- `pnpm notes:agent:install`: install or replace the macOS LaunchAgent for automatic sync.
-- `pnpm notes:agent:status`: print the current LaunchAgent state.
-- `pnpm setup:macos-sync`: run the full macOS setup flow for this branch.
-- `pnpm notes:build-content`: regenerate `content/**` from the raw snapshot.
-- `pnpm build`: run `prebuild`, generate responsive media and build the SvelteKit static site.
-- `pnpm test`: run unit-level safety and content tests.
-- `pnpm check`: run Svelte/TypeScript checks.
-- `pnpm test:build`: inspect the generated build output.
+- `pnpm notes:export`：读取公开 Apple Notes 目录树并写入
+  `notes-export/public-notes.json`。
+- `pnpm notes:publish`：导出；仅在快照变化时创建本地提交，不推送。
+- `pnpm notes:publish:push`：导出；有变化时提交并推送到 `origin/blog`。
+- `pnpm notes:agent:install`：安装或替换 macOS 自动同步 LaunchAgent。
+- `pnpm notes:agent:status`：显示当前 LaunchAgent 状态。
+- `pnpm setup:macos-sync`：为当前分支运行完整的 macOS 同步配置流程。
+- `pnpm notes:build-content`：从原始快照重新生成 `content/**`。
+- `pnpm build`：运行 `prebuild`、生成响应式媒体并构建 SvelteKit 静态站点。
+- `pnpm test`：运行单元级安全和内容测试。
+- `pnpm check`：运行 Svelte/TypeScript 检查。
+- `pnpm test:build`：检查生成后的构建产物。
 
-The publish script first runs `git pull --ff-only origin blog` so online settings commits are integrated before the Mac pushes a new Notes snapshot.
+发布脚本会先执行 `git pull --ff-only origin blog`，以便在 Mac 推送新快照前，
+先合并设置页产生的线上配置提交。
 
-## Automatic Mac sync
+## Mac 自动同步
 
-For a new Mac that already has Git, Node.js and pnpm:
+在已经安装 Git、Node.js 和 pnpm 的新 Mac 上：
 
 ```sh
 git clone https://github.com/guoyingwei6/moire.git
@@ -254,59 +294,54 @@ git checkout blog
 node scripts/notes/setup-macos-sync.mjs
 ```
 
-If dependencies are already installed, the shorter project command is:
+如果依赖已经安装，也可以使用较短的项目命令：
 
 ```sh
 pnpm setup:macos-sync
 ```
 
-The setup script checks the branch, installs dependencies, performs one Apple
-Notes export to trigger macOS Automation permission, renders a machine-specific
-LaunchAgent plist, installs it into `~/Library/LaunchAgents/`, kickstarts it, and
-prints the current status.
+配置脚本会检查分支、安装依赖、执行一次 Apple Notes 导出以触发 macOS
+自动化权限提示、渲染当前机器专用的 LaunchAgent plist、安装到
+`~/Library/LaunchAgents/`、启动任务并显示状态。
 
-This Mac uses a user LaunchAgent as a simple pseudo-hook. It is not a
-long-running watcher process. `launchd` starts it after login and then starts it
-again every 10 minutes. Each run exports Apple Notes once, checks whether the raw
-snapshot changed, commits only when changed, and pushes `origin/blog`.
+Mac 使用的是用户级 LaunchAgent 伪 Hook，而不是一个长期常驻的监视进程。
+`launchd` 在用户登录后启动它，此后每 10 分钟再执行一次。每次运行只导出一次
+Apple Notes，检查原始快照是否变化，仅在发生变化时提交并推送 `origin/blog`。
 
 ```text
 /Users/guoyingwei/Library/LaunchAgents/com.guoyingwei.moire-blog-notes.plist
 ```
 
-It runs every 10 minutes:
+每 10 分钟执行：
 
 ```text
 /opt/homebrew/bin/node scripts/notes/publish-macos-notes.mjs --push true
 ```
 
-Current installed behavior on this Mac:
+当前 Mac 上的安装行为：
 
-- LaunchAgent label: `com.guoyingwei.moire-blog-notes`
-- Trigger: `RunAtLoad=true` and `StartInterval=600`
-- Scope: user session only; it starts after the macOS user logs in, not before login
-- Normal state between runs: `state = not running`
-- Failure behavior: a failed run exits and will be tried again at the next interval
-- No-change behavior: `changed=false`, `pushed=false`, no empty commit
+- LaunchAgent label：`com.guoyingwei.moire-blog-notes`
+- 触发方式：`RunAtLoad=true` 和 `StartInterval=600`
+- 运行范围：仅用户会话；macOS 用户登录后启动，不会在登录前运行
+- 两次任务之间的正常状态：`state = not running`
+- 失败行为：本次运行退出，在下一个时间间隔再次尝试
+- 无变化行为：`changed=false`、`pushed=false`，不会创建空提交
 
-Stability model:
+稳定性设计：
 
-- `launchd` is the supervisor. If one run fails, it does not keep a broken Node
-  process alive; the next scheduled run tries again.
-- The script refuses to run outside the `blog` branch, so it cannot accidentally
-  publish to `main` or `development`.
-- The script runs `git pull --ff-only origin blog` before export, so settings
-  edits made from `/settings/` are integrated before the Mac pushes a Notes
-  snapshot.
-- Only `notes-export/public-notes.json` is committed by the automatic publisher.
-  Markdown, responsive images and the final site are regenerated by Cloudflare.
-- Empty runs do not create commits.
+- `launchd` 负责监督。一次执行失败时，不会保留损坏的 Node 进程；下一个调度周期会重试。
+- 脚本拒绝在 `blog` 以外的分支运行，因此不会意外发布到 `main` 或 `development`。
+- 导出前执行 `git pull --ff-only origin blog`，先接收 `/settings/` 产生的配置修改，
+  再推送新的 Notes 快照。
+- 自动发布器只提交 `notes-export/public-notes.json`。Markdown、响应式图片和最终
+  网站都由 Cloudflare 重新生成。
+- 无变化的运行不会创建提交。
 
-Known boundary: this is a login-session LaunchAgent, not a system daemon. If the
-Mac is off, asleep, logged out, or Notes has not synced from iCloud yet, nothing
-is pushed until the next successful run after the Mac is awake and logged in.
+已知边界：这是登录会话中的 LaunchAgent，不是系统级守护进程。如果 Mac
+关机、休眠、用户退出登录，或者 Notes 尚未从 iCloud 同步，就不会推送；Mac
+唤醒并登录后，会在下一次成功运行时继续。
 
-Useful checks:
+常用检查：
 
 ```sh
 pnpm notes:agent:status
@@ -315,54 +350,53 @@ tail -n 100 logs/launchd.err.log
 git status --short --branch
 ```
 
-To stop it:
+停止自动同步：
 
 ```sh
 pnpm notes:agent:uninstall
 ```
 
-To start or reload it on a Mac:
+启动或重新载入：
 
 ```sh
 pnpm notes:agent:install
 ```
 
-To change the interval, edit `StartInterval` in
-`scripts/notes/launchd/com.guoyingwei.moire-blog-notes.plist`, or run install
-with an environment override:
+修改时间间隔时，可以编辑
+`scripts/notes/launchd/com.guoyingwei.moire-blog-notes.plist` 中的
+`StartInterval`，或者安装时传入环境变量：
 
 ```sh
 MOIRE_NOTES_INTERVAL=1800 pnpm notes:agent:install
 MOIRE_NOTES_INTERVAL=1800 node scripts/notes/setup-macos-sync.mjs
 ```
 
-`600` means 10 minutes; `1800` means 30 minutes. The install script renders the
-template with the current Node path and current worktree path, so the committed
-template is portable across machines and users.
+`600` 表示 10 分钟，`1800` 表示 30 分钟。安装脚本会把当前 Node 路径和
+worktree 路径写入模板，因此仓库中的模板可以在不同机器和用户之间迁移。
 
-The normal no-change output is:
+正常的无变化输出是：
 
 ```text
 changed=false
 pushed=false
 ```
 
-## Cloudflare Pages setup
+## Cloudflare Pages 配置
 
-Cloudflare Pages should use:
+Cloudflare Pages 应使用：
 
-- repository: `guoyingwei6/moire`
-- production branch: `blog`
-- build command: `pnpm build`
-- output directory: `build`
-- custom domain: `moireblog.guoyingwei.top`
-- environment variables for settings access and writes: `SETTINGS_PASSWORD` and `GITHUB_TOKEN`
+- 仓库：`guoyingwei6/moire`
+- 生产分支：`blog`
+- 构建命令：`pnpm build`
+- 输出目录：`build`
+- 自定义域名：`moireblog.guoyingwei.top`
+- 设置访问与写入所需环境变量：`SETTINGS_PASSWORD` 和 `GITHUB_TOKEN`
 
-No GitHub Actions workflow is required for this branch. Cloudflare deploys from the `blog` branch.
+本分支不需要 GitHub Actions workflow。Cloudflare 直接从 `blog` 分支部署。
 
-## Restore on another Mac
+## 在另一台 Mac 上恢复
 
-Minimum path:
+最短流程：
 
 ```sh
 git clone https://github.com/guoyingwei6/moire.git
@@ -371,18 +405,17 @@ git checkout blog
 node scripts/notes/setup-macos-sync.mjs
 ```
 
-Prerequisites:
+前提条件：
 
-- macOS with Notes.app signed into the iCloud account that owns the public Notes
-  folder.
-- Git credentials that can push to the target repository.
-- Node.js and pnpm installed.
-- The `blog` branch checked out.
+- macOS 的 Notes.app 已登录拥有公开 Notes 文件夹的 iCloud 账户；
+- Git 凭据能够推送目标仓库；
+- 已安装 Node.js 和 pnpm；
+- 已切换到 `blog` 分支。
 
-During the first run, macOS may ask whether Terminal/iTerm/Codex can control
-Notes.app. Approve it; otherwise the exporter cannot read Apple Notes.
+首次运行时，macOS 可能询问 Terminal、iTerm 或 Codex 是否可以控制 Notes.app。
+需要允许，否则导出器无法读取 Apple Notes。
 
-Check logs and Git status after setup:
+配置后检查日志和 Git 状态：
 
 ```sh
 pnpm notes:agent:status
@@ -391,27 +424,29 @@ tail -n 100 logs/launchd.err.log
 git status --short --branch
 ```
 
-For another user or repository fork, update these values first:
+其他用户或仓库 Fork 使用时，先修改以下内容：
 
-- Apple Notes root folder name:
+- Apple Notes 根文件夹名：
 
 ```sh
 node scripts/notes/setup-macos-sync.mjs --root "your.public.notes.folder"
 ```
 
-- Git remote and branch if they are not `origin` and `blog`.
-- Cloudflare Pages project settings: production branch, build command and
-  `GITHUB_TOKEN` for `/settings/` writes.
-- Site fields in `site.config.json` or `/settings/`.
+- 如果不是 `origin` 和 `blog`，修改 Git remote 与分支；
+- 修改 Cloudflare Pages 项目中的生产分支、构建命令，以及 `/settings/`
+  写入需要的 `GITHUB_TOKEN`；
+- 在 `site.config.json` 或 `/settings/` 中修改网站信息。
 
-## Current limits
+## 当前限制
 
-- Only direct child folders of the public Apple Notes parent folder are supported.
-- New public folders require adding a row to the root `index` menu table.
-- The trigger is a 10-minute LaunchAgent pseudo-hook, not a true Apple Notes database event.
-- Deletion, rename and move reconciliation is report-only. `content/.moire-manifest.json` records generated ownership and `content/.moire-reconcile.json` reports candidates, but cleanup deletion is not applied automatically.
-- Generic arbitrary URL preview is intentionally not implemented. Add explicit whitelist preview rules instead.
+- 只支持公开 Apple Notes 父文件夹的直接子文件夹；
+- 新的公开文件夹需要在根 `index` 菜单表中增加一行；
+- 触发器是每 10 分钟运行的 LaunchAgent 伪 Hook，不是真正的 Apple Notes
+  数据库事件；
+- 删除、改名和移动目前只生成对账报告。`content/.moire-manifest.json`
+  记录生成文件的归属，`content/.moire-reconcile.json` 报告候选项，但不会自动删除；
+- 不提供任意网址的通用预览；新的预览类型应通过明确的白名单规则增加。
 
-## License
+## 许可证
 
-This project remains licensed under GPL-3.0.
+本项目继续使用 GPL-3.0 许可证。
