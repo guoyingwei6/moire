@@ -601,6 +601,91 @@ input:focus-visible {
   background: color-mix(in srgb, var(--accent) 9%, var(--page-bg));
 }
 
+.moire-attachment {
+  width: min(32rem, 100%);
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--secondary) 10%, var(--page-bg));
+  color: var(--text);
+}
+
+.attachment-main {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.attachment-main > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+  flex: 1 1 auto;
+}
+
+.attachment-main strong,
+.attachment-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-main strong {
+  font-weight: 700;
+}
+
+.attachment-main span:not(.attachment-icon) {
+  color: var(--secondary);
+  font-size: 0.875rem;
+}
+
+.attachment-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--page-bg) 72%, transparent);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.attachment-open {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--page-bg) 72%, transparent);
+  color: var(--text) !important;
+  font-size: 0.875rem;
+}
+
+.moire-attachment audio,
+.moire-attachment video,
+.moire-attachment iframe {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.moire-attachment audio {
+  height: 2.5rem;
+}
+
+.moire-attachment video {
+  max-height: 28rem;
+  border-radius: 0.65rem;
+  background: #000;
+}
+
+.moire-attachment iframe {
+  height: min(70vh, 38rem);
+  border: 0;
+  border-radius: 0.65rem;
+  background: #fff;
+}
+
 .image-lightbox {
   position: fixed;
   inset: 0;

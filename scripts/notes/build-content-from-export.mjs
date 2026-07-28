@@ -48,6 +48,7 @@ const report = {
   reconcile: relative(process.cwd(), reconcilePath),
   notes: [],
   media: [],
+  attachments: [],
   skippedDrafts: [],
   skippedSections: []
 };
@@ -136,8 +137,13 @@ function writeNote({ note, sectionSlug, outputPath, isIndex }) {
     noteId: stableId(note),
     sourcePath: outputPath
   }), note.name).trim();
+  const attachmentMarkdown = attachmentsToMarkdown(note.attachments, {
+    noteId: stableId(note),
+    sourcePath: outputPath
+  });
+  const combinedMarkdown = [markdown, attachmentMarkdown].filter(Boolean).join('\n\n');
   const title = isIndex ? titleForIndex(sectionSlug, note.name) : note.name;
-  const body = `${!sectionSlug && isIndex ? normalizeRootIndexMarkdown(markdown) : markdown}\n`;
+  const body = `${!sectionSlug && isIndex ? normalizeRootIndexMarkdown(combinedMarkdown) : combinedMarkdown}\n`;
   writeManagedFile(outputPath, frontmatter({ title, created: note.created, updated: note.modified, tags: note.tags }) + body, 'markdown');
   report.notes.push({
     title: note.name,
@@ -223,6 +229,68 @@ function imageTagToMarkdown(tag, context) {
   const href = relative(dirname(context.sourcePath), filePath).replaceAll('\\', '/');
   report.media.push({ noteId: context.noteId, href, bytes: buffer.length });
   return `![](${href})`;
+}
+
+function attachmentsToMarkdown(attachments, context) {
+  if (!Array.isArray(attachments) || !attachments.length) return '';
+  return attachments
+    .map((attachment) => attachmentToMarkdown(attachment, context))
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function attachmentToMarkdown(attachment, context) {
+  const base64 = String(attachment?.dataBase64 || '').replace(/\s+/g, '');
+  if (!base64) return '';
+  const buffer = Buffer.from(base64, 'base64');
+  if (!buffer.length) return '';
+  const kind = normalizeAttachmentKind(attachment.kind);
+  const extension = normalizeAttachmentExtension(attachment.extension, attachment.mime, kind);
+  const hash = createHash('sha1').update(buffer).digest('hex').slice(0, 32);
+  const filePath = resolve(contentDir, 'media', 'attachments', `${hash}.${extension}`);
+  writeManagedFile(filePath, buffer, 'media');
+  const href = relative(dirname(context.sourcePath), filePath).replaceAll('\\', '/');
+  const title = String(attachment.title || attachment.filename || 'Attachment').trim();
+  const lines = [
+    '::moire-attachment',
+    `type: ${kind}`,
+    `title: ${escapeAttachmentValue(title)}`,
+    `href: ${href}`,
+    `mime: ${escapeAttachmentValue(String(attachment.mime || ''))}`,
+    `size: ${Number(attachment.size) || buffer.length}`
+  ];
+  if (Number(attachment.duration) > 0) lines.push(`duration: ${Number(attachment.duration)}`);
+  lines.push('::');
+  report.attachments.push({
+    noteId: context.noteId,
+    title,
+    type: kind,
+    href,
+    bytes: buffer.length
+  });
+  return lines.join('\n');
+}
+
+function normalizeAttachmentKind(value) {
+  const kind = String(value || '').toLowerCase();
+  return ['audio', 'pdf', 'video', 'file'].includes(kind) ? kind : 'file';
+}
+
+function normalizeAttachmentExtension(extension, mime, kind) {
+  const ext = String(extension || '').toLowerCase().replace(/^\./, '').replace(/[^a-z0-9]+/g, '');
+  if (ext) return ext === 'jpeg' ? 'jpg' : ext;
+  const value = String(mime || '').toLowerCase();
+  if (value.includes('pdf')) return 'pdf';
+  if (value.includes('mpeg')) return kind === 'audio' ? 'mp3' : 'mp4';
+  if (value.includes('mp4')) return kind === 'audio' ? 'm4a' : 'mp4';
+  if (value.includes('quicktime')) return 'mov';
+  if (value.includes('wav')) return 'wav';
+  if (value.includes('ogg')) return 'ogg';
+  return 'bin';
+}
+
+function escapeAttachmentValue(value) {
+  return String(value || '').replace(/[\r\n]+/g, ' ').trim();
 }
 
 function convertLists(html) {

@@ -63,7 +63,7 @@ function validateKindPath(file) {
   }
   if (
     file.kind === 'media'
-    && !/^media\/[\p{L}\p{N}._~-]+\.(?:avif|gif|heic|heif|jpe?g|png|svg|webp)$/iu.test(file.path)
+    && !/^media\/(?:attachments\/)?[\p{L}\p{N}._~-]+\.(?:aac|avif|bin|csv|docx?|gif|heic|heif|jpe?g|key|m4a|m4v|mov|mp3|mp4|numbers|oga|ogg|pages|pdf|png|pptx?|svg|txt|wav|webm|webp|xlsx?|zip)$/iu.test(file.path)
   ) {
     throw new Error(`Invalid publish manifest path for media: ${file.path}`);
   }

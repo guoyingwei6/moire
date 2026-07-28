@@ -108,6 +108,13 @@ assert.match(headingPageHtml, /<h2 id="01-system-preferences">/, 'Markdown headi
 assert.match(headingPageHtml, /<ul>\s*<li>\s*<p><strong>Func key:<\/strong><\/p>\s*<ul>/, 'Apple Notes nested lists should remain nested after export');
 assert.match(headingPageHtml, /<pre><code>defaults write <span class="code-flag">-g<\/span> NSWindowShouldDragOnGesture/, 'Apple Notes mono blocks should render as highlighted fenced code blocks');
 
+const attachmentPagePath = path.join(buildDirectory, 'blog', '播客发布测试', 'index.html');
+const attachmentPageHtml = await readFile(attachmentPagePath, 'utf8');
+assert.match(attachmentPageHtml, /class="moire-attachment moire-attachment-pdf"/, 'PDF attachments should render as inline attachment cards');
+assert.match(attachmentPageHtml, /<iframe src="[^"]+\.pdf" title="11060126_0159591784" loading="lazy"><\/iframe>/, 'PDF attachments should expose an inline preview iframe');
+assert.match(attachmentPageHtml, /class="moire-attachment moire-attachment-audio"/, 'recording attachments should render as audio cards');
+assert.match(attachmentPageHtml, /<audio controls preload="metadata" src="[^"]+\.m4a"><\/audio>/, 'recording attachments should expose an audio player');
+
 const aboutPath = path.join(buildDirectory, 'about', 'about-me', 'index.html');
 const aboutHtml = await readFile(aboutPath, 'utf8');
 assert.match(aboutHtml, /<article class="markdown-content">[\s\S]*<div class="image-gallery"><a class="image-link"[^>]+><img[^>]+srcset=[^>]+><\/a><a class="image-link"[^>]+><img[^>]+srcset=[^>]+><\/a><\/div>/, 'same-block Apple Notes images should stay together for two-column rendering');

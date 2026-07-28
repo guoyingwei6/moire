@@ -112,6 +112,31 @@ const doi = render('[https://doi.org/10.1038/s41586-020-2649-2](https://doi.org/
 assert.match(doi, /class="link-embed link-embed-card link-embed-service link-embed-doi"/, 'DOI bare links should render as service cards');
 assert.match(doi, /10.1038\/s41586-020-2649-2/);
 
+const attachments = render(`
+::moire-attachment
+type: audio
+title: New Recording
+href: ../media/attachments/recording.m4a
+mime: audio/mp4
+size: 42000
+duration: 4.7
+::
+
+::moire-attachment
+type: pdf
+title: Paper
+href: ../media/attachments/paper.pdf
+mime: application/pdf
+size: 250000
+::
+`);
+assert.match(attachments, /class="moire-attachment moire-attachment-audio"/, 'audio attachments should render as cards');
+assert.match(attachments, /<audio controls preload="metadata" src="\/assets\/\.\.\/media\/attachments\/recording\.m4a"><\/audio>/);
+assert.match(attachments, /New Recording/);
+assert.match(attachments, /5s/);
+assert.match(attachments, /class="moire-attachment moire-attachment-pdf"/, 'PDF attachments should render as inline previews');
+assert.match(attachments, /<iframe src="\/assets\/\.\.\/media\/attachments\/paper\.pdf" title="Paper" loading="lazy"><\/iframe>/);
+
 const labelledMusic = render('[listen](https://embed.music.apple.com/cn/album/marry-you/576670451?i=576670463)');
 assert.doesNotMatch(labelledMusic, /link-embed-apple-music/, 'labelled media links should stay ordinary links');
 const labelledMap = render('[open map](https://maps.apple.com/?ll=40.025272,116.286638&q=Place)');

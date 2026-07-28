@@ -24,11 +24,15 @@ const previous = createPublishManifest(root, [
 const next = createPublishManifest(root, [
   { path: 'blog/keep.md', kind: 'markdown', digest: digest('a') },
   { path: 'blog/renamed.md', kind: 'markdown', digest: digest('b') },
+  { path: 'media/attachments/recording.m4a', kind: 'media', digest: digest('c') },
   { path: 'media/shared.jpg', kind: 'media', digest: digest('d') }
 ]);
 
 assert.deepEqual(planPublishReconciliation(previous, next), {
-  upsert: [{ path: 'blog/renamed.md', kind: 'markdown', digest: digest('b') }],
+  upsert: [
+    { path: 'blog/renamed.md', kind: 'markdown', digest: digest('b') },
+    { path: 'media/attachments/recording.m4a', kind: 'media', digest: digest('c') }
+  ],
   unchanged: [
     { path: 'blog/keep.md', kind: 'markdown', digest: digest('a') },
     { path: 'media/shared.jpg', kind: 'media', digest: digest('d') }
@@ -43,6 +47,12 @@ assert.deepEqual(planPublishReconciliation(previous, next), {
       to: 'blog/renamed.md',
       kind: 'markdown',
       digest: digest('b')
+    },
+    {
+      from: 'media/unused.jpg',
+      to: 'media/attachments/recording.m4a',
+      kind: 'media',
+      digest: digest('c')
     }
   ],
   next
@@ -75,7 +85,7 @@ assert.throws(
 for (const file of [
   { path: 'blog/not-markdown.txt', kind: 'markdown', digest: digest('a') },
   { path: 'private.jpg', kind: 'media', digest: digest('a') },
-  { path: 'media/archive.zip', kind: 'media', digest: digest('a') }
+  { path: 'media/private/avatar.jpg', kind: 'media', digest: digest('a') }
 ]) {
   assert.throws(
     () => createPublishManifest(root, [file]),

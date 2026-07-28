@@ -186,6 +186,77 @@ function renderImageHtml(token, options) {
   return `<img loading="lazy" decoding="async" src="${escapeHtml(href)}" alt="${alt}"${title}>`;
 }
 
+/** @param {Record<string, string>} fields @param {RenderMarkdownOptions} options */
+function renderAttachmentHtml(fields, options) {
+  const href = options.resolveImageHref(fields.href || '');
+  if (!href) return '';
+  const type = normalizeAttachmentType(fields.type);
+  const title = fields.title || 'Attachment';
+  const meta = attachmentMeta(fields);
+  const safeHref = escapeHtml(href);
+  const safeTitle = escapeHtml(title);
+  const safeMeta = meta ? `<span>${escapeHtml(meta)}</span>` : '';
+  const openLink = `<a class="attachment-open" href="${safeHref}" target="_blank" rel="noreferrer">Open</a>`;
+
+  if (type === 'audio') {
+    return `<div class="moire-attachment moire-attachment-audio"><div class="attachment-main"><span class="attachment-icon" aria-hidden="true">▶</span><div><strong>${safeTitle}</strong>${safeMeta}</div></div><audio controls preload="metadata" src="${safeHref}"></audio>${openLink}</div>\n`;
+  }
+
+  if (type === 'video') {
+    return `<div class="moire-attachment moire-attachment-video"><div class="attachment-main"><span class="attachment-icon" aria-hidden="true">▶</span><div><strong>${safeTitle}</strong>${safeMeta}</div></div><video controls preload="metadata" src="${safeHref}"></video>${openLink}</div>\n`;
+  }
+
+  if (type === 'pdf') {
+    return `<div class="moire-attachment moire-attachment-pdf"><div class="attachment-main"><span class="attachment-icon" aria-hidden="true">PDF</span><div><strong>${safeTitle}</strong>${safeMeta}</div>${openLink}</div><iframe src="${safeHref}" title="${safeTitle}" loading="lazy"></iframe></div>\n`;
+  }
+
+  return `<div class="moire-attachment moire-attachment-file"><div class="attachment-main"><span class="attachment-icon" aria-hidden="true">↗</span><div><strong>${safeTitle}</strong>${safeMeta}</div>${openLink}</div></div>\n`;
+}
+
+/** @param {string} value */
+function normalizeAttachmentType(value) {
+  const type = String(value || '').trim().toLowerCase();
+  return ['audio', 'pdf', 'video', 'file'].includes(type) ? type : 'file';
+}
+
+/** @param {Record<string, string>} fields */
+function attachmentMeta(fields) {
+  const parts = [];
+  if (fields.mime) parts.push(fields.mime);
+  const size = Number(fields.size);
+  if (Number.isFinite(size) && size > 0) parts.push(formatBytes(size));
+  const duration = Number(fields.duration);
+  if (Number.isFinite(duration) && duration > 0) parts.push(formatDuration(duration));
+  return parts.join(' · ');
+}
+
+/** @param {number} bytes */
+function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+}
+
+/** @param {number} seconds */
+function formatDuration(seconds) {
+  const rounded = Math.max(1, Math.round(seconds));
+  const minutes = Math.floor(rounded / 60);
+  const rest = rounded % 60;
+  return minutes ? `${minutes}:${String(rest).padStart(2, '0')}` : `${rest}s`;
+}
+
+/** @param {string} body */
+function parseAttachmentFields(body) {
+  /** @type {Record<string, string>} */
+  const fields = {};
+  for (const line of body.split(/\r?\n/)) {
+    const match = line.match(/^([A-Za-z][\w-]*):\s*(.*?)\s*$/);
+    if (!match) continue;
+    fields[match[1].toLowerCase()] = match[2].trim();
+  }
+  return fields;
+}
+
 /** @param {string} code */
 function highlightShellCode(code) {
   return escapeHtml(code)
@@ -570,6 +641,24 @@ export function renderMarkdownDocument(markdown, options) {
         renderer(token) {
           const images = /** @type {{ text: string, href: string, title: null }[]} */ (token.images);
           return `<div class="image-gallery">${images.map((image) => renderImageHtml(image, options)).join('')}</div>\n`;
+        }
+      },
+      {
+        name: 'moireAttachment',
+        level: 'block',
+        start(source) {
+          const index = source.indexOf('::moire-attachment');
+          return index === -1 ? undefined : index;
+        },
+        tokenizer(source) {
+          const match = source.match(/^::moire-attachment[ \t]*\n([\s\S]*?)^::[ \t]*(?:\n|$)/m);
+          if (!match) return undefined;
+          const fields = parseAttachmentFields(match[1]);
+          if (!fields.href) return undefined;
+          return { type: 'moireAttachment', raw: match[0], fields };
+        },
+        renderer(token) {
+          return renderAttachmentHtml(/** @type {Record<string, string>} */ (token.fields), options);
         }
       },
       {

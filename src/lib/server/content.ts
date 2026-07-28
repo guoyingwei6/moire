@@ -36,7 +36,7 @@ const markdownModules = import.meta.glob('/content/**/*.md', {
   eager: true
 }) as Record<string, string>;
 
-const assetModules = import.meta.glob('/content/**/*.{avif,gif,heic,heif,jpeg,jpg,png,svg,webp}', {
+const assetModules = import.meta.glob('/content/**/*.{aac,avif,bin,csv,doc,docx,gif,heic,heif,jpeg,jpg,key,m4a,m4v,mov,mp3,mp4,numbers,oga,ogg,pages,pdf,png,ppt,pptx,svg,txt,wav,webm,webp,xls,xlsx,zip}', {
   query: '?url',
   import: 'default',
   eager: true
@@ -181,6 +181,7 @@ function extractTags(body: string): { body: string; tags: string[] } {
 function stripMarkdown(markdown: string): string {
   return markdown
     .replace(/^::moire-gallery\s*$[\s\S]*?^::\s*$/gm, ' ')
+    .replace(/^::moire-attachment\s*$[\s\S]*?^::\s*$/gm, ' ')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -193,6 +194,7 @@ function stripMarkdown(markdown: string): string {
 function searchableText(markdown: string): string {
   return markdown
     .replace(/^::moire-gallery\s*$[\s\S]*?^::\s*$/gm, ' ')
+    .replace(/^::moire-attachment\s*$[\s\S]*?^::\s*$/gm, ' ')
     .replace(/```[^\r\n]*\r?\n([\s\S]*?)```/g, ' $1 ')
     .replace(/~~~[^\r\n]*\r?\n([\s\S]*?)~~~/g, ' $1 ')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, ' $1 ')

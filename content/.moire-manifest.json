@@ -23,6 +23,11 @@
       "digest": "da09fb15880a146d01064b3b2723ea46eb8782678f9a848fd93bebab5acde50a"
     },
     {
+      "path": "blog/播客发布测试.md",
+      "kind": "markdown",
+      "digest": "8c7086043d996a75d1ada223ea20c96d24d680ebda86f3c187dde0e8cdeebd52"
+    },
+    {
       "path": "blog/症状.md",
       "kind": "markdown",
       "digest": "63b4778329050ee5e1ed7522b4724e9ac20db8a17018117276db01952af38b47"
@@ -83,6 +88,16 @@
       "digest": "61a62edefd755449e051cb52c0382f6d1a93485be257b73e7c6069d42ae7949f"
     },
     {
+      "path": "media/attachments/c86a57b43646b5542263fe41de8de75a.m4a",
+      "kind": "media",
+      "digest": "0e0bf91eba5212ccb1f533d0253b5bc77d72a6fa90a82a50a72cd56c6f0fbba9"
+    },
+    {
+      "path": "media/attachments/ec80bb801e1ec29e6da0f33a73bb82b4.pdf",
+      "kind": "media",
+      "digest": "f9997d5874f4d177b22dd4740e614d99784b56d084667f311b51f14a1cd036f1"
+    },
+    {
       "path": "media/d428d83872634947f6ed2d06dbd08ca5.heic",
       "kind": "media",
       "digest": "5938c226e4e72acc205dd24a6e732a0f3c349cbbdbe1da8230414d4159df7140"
@@ -96,6 +111,11 @@
       "path": "media/f7a9e989fa2fe12370711de6a94756a7.heic",
       "kind": "media",
       "digest": "766e357eb60bbe3b714288b25dbe2db3536695129f0628f58db1c462fb0edc92"
+    },
+    {
+      "path": "media/f9b2939caf33b4bd6b6b5cd277ef4c97.jpg",
+      "kind": "media",
+      "digest": "82a6740833c9bc1e0bf2bb19f6ec541f65daf6acb9aa17e75293c392d3c363db"
     },
     {
       "path": "music/boku-ga-shinou-to-omottanowa.md",

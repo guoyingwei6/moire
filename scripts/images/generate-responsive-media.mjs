@@ -30,7 +30,9 @@ if (!existsSync(mediaDir)) {
 rmSync(outputDir, { recursive: true, force: true });
 mkdirSync(outputDir, { recursive: true });
 
-for (const file of readdirSync(mediaDir)) {
+for (const entry of readdirSync(mediaDir, { withFileTypes: true })) {
+  if (!entry.isFile()) continue;
+  const file = entry.name;
   const extension = extname(file).toLowerCase();
   if (!supported.has(extension)) {
     report.skipped.push({ file, reason: 'unsupported media type' });
