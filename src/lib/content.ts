@@ -29,6 +29,7 @@ export type ContentSummary = {
   kind: ContentKind;
   parentRoute: string | null;
   hidden: boolean;
+  locked: boolean;
   properties: Record<string, string>;
   options: ContentOptions;
 };
@@ -38,7 +39,6 @@ export type ContentRecord = ContentSummary & {
   html: string;
   wordCount: number;
   readingMinutes: number;
-  locked: boolean;
   lockedPayload: LockedPayload | null;
 };
 

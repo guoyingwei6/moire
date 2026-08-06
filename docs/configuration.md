@@ -139,7 +139,7 @@ Chinese field name `密码` is also accepted. A locked note will:
 
 - encrypt its rendered HTML at build time with **AES-256-GCM** (PBKDF2 key derivation) and store only ciphertext in the page
 - show a lock prompt; readers decrypt and render the body in the browser after entering the correct password
-- be excluded from search indexes, RSS feeds, the sitemap, and section listings
+- stay visible in section listings (title plus the lock notice as summary) while being excluded from search indexes, RSS feeds, and the sitemap
 - never ship the plaintext body or password value in static build output
 
 To use one shared password instead of writing it into every note, add:

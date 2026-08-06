@@ -177,7 +177,7 @@ full deployment reference.
 | Native tags | Reads real Apple Notes tags from the Notes database and builds the Tags page |
 | Link previews | Whitelisted YouTube, Apple Music, Spotify, Apple Podcasts/TV, maps, Bilibili, Xiaohongshu, GitHub, DOI, and related embeds |
 | Page options | Root, folder, and individual-note `name/value` tables with inheritance and overrides |
-| Note password lock | Per-note `password` / `密码`, or `locked` plus build-time `MOIRE_NOTES_PASSWORD`; AES-256-GCM at build, browser unlock; excluded from search/RSS/Sitemap/listings |
+| Note password lock | Per-note `password` / `密码`, or `locked` plus build-time `MOIRE_NOTES_PASSWORD`; AES-256-GCM at build, browser unlock; still listed, excluded from search/RSS/Sitemap |
 | Accent hover UI | Sidebar, current section, titles, list titles, and footer links use the site accent (`--accent` / `/settings/` link color) on hover |
 | Site settings | Password-protected `/settings/` for identity, colors, social links, and display switches |
 | Publishing safety | Safe local paths only; non-`blog` branches refuse publishing; the settings API can only write `site.config.json` |

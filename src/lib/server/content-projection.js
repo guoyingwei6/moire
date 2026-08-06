@@ -38,7 +38,7 @@ export function toListingEntry(record, layout) {
  */
 export function toSearchEntries(records, textByRoute, hrefForRoute) {
   return records
-    .filter((record) => !record.hidden && record.sourcePath !== null)
+    .filter((record) => !record.hidden && !record.locked && record.sourcePath !== null)
     .map((record) => ({
       route: record.route,
       href: hrefForRoute(record.route),

@@ -326,7 +326,7 @@ function buildDrafts(): DraftRecord[] {
       : metadata;
     const extracted = extractTitle(noteConfiguration.cleanedMarkdown, titleMetadata, sourcePath);
     const lockState = noteLockState(noteConfiguration.properties, sourcePath);
-    const hidden = isUnderscoreDraft(sourcePath, extracted.title) || lockState.locked;
+    const hidden = isUnderscoreDraft(sourcePath, extracted.title);
     const { body, tags: inlineTags } = extractTags(extracted.body);
     const tags = [...new Set([
       ...parseListProperty(metadata.tags),
@@ -571,7 +571,7 @@ function buildRecords(): ContentRecord[] {
       false,
       draft.sourcePath
     );
-    searchTextByRoute.set(draft.route, searchableText(draft.body));
+    searchTextByRoute.set(draft.route, draft.locked ? '' : searchableText(draft.body));
     const renderedHtml = draft.sourcePath
       ? renderMarkdownDocument(draft.body, {
           sourcePath: draft.sourcePath,
@@ -624,7 +624,6 @@ function asSummary(record: ContentRecord): ContentSummary {
     sourcePath: _sourcePath,
     wordCount: _wordCount,
     readingMinutes: _readingMinutes,
-    locked: _locked,
     lockedPayload: _lockedPayload,
     ...summary
   } = record;
@@ -820,7 +819,7 @@ export function getArchiveGroups(): ArchiveGroup[] {
 
 export function getAllPublicRoutes(): string[] {
   return [
-    ...records.filter(isDiscoverable).map((record) => record.route),
+    ...records.filter((record) => isDiscoverable(record) && !record.locked).map((record) => record.route),
     '/tags/',
     ...tagGroups.map((group) => `/tags/${encodeURIComponent(group.slug)}/`),
     '/archive/',

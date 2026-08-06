@@ -106,7 +106,7 @@
   <meta property="og:url" content={canonical} />
   <meta property="og:title" content={displayTitle} />
   <meta property="og:description" content={record.summary || config.description} />
-  {#if record.hidden}
+  {#if record.hidden || record.locked}
     <meta name="robots" content="noindex, nofollow" />
   {/if}
 </svelte:head>

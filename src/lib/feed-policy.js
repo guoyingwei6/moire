@@ -3,11 +3,12 @@
  * autodiscovery metadata. Keeping it client-safe prevents the two surfaces
  * from disagreeing about whether a Collection feed exists.
  *
- * @param {{ kind: string, hidden: boolean, options?: { showInMenu?: boolean, showInFooter?: boolean } }} post
+ * @param {{ kind: string, hidden: boolean, locked?: boolean, options?: { showInMenu?: boolean, showInFooter?: boolean } }} post
  */
 export function isFeedPost(post) {
   return post.kind === 'post'
     && !post.hidden
+    && !post.locked
     && post.options?.showInMenu !== false
     && post.options?.showInFooter !== true;
 }
