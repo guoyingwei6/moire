@@ -50,17 +50,17 @@
     if (busy) return;
 
     if (!record.lockedPayload) {
-      unlockError = '缺少加密数据，请重新构建后再试。';
+      unlockError = 'Missing encrypted payload. Rebuild the site and try again.';
       return;
     }
     if (typeof crypto === 'undefined' || !crypto.subtle) {
-      unlockError = '当前浏览器环境不支持解密，请用本机 http://127.0.0.1 打开。';
+      unlockError = 'This browser context cannot decrypt. Open the site over http://127.0.0.1 or HTTPS.';
       return;
     }
 
     const candidate = readPassword();
     if (!candidate) {
-      unlockError = '请输入密码。';
+      unlockError = 'Please enter a password.';
       passwordInput?.focus();
       return;
     }
@@ -72,7 +72,7 @@
       unlockedHtml = await decryptNote(record.lockedPayload, candidate);
     } catch (error) {
       console.error('note unlock failed', error);
-      unlockError = '密码错误，请重试。';
+      unlockError = 'Wrong password. Try again.';
       passwordInput?.focus();
       passwordInput?.select();
     } finally {
@@ -128,14 +128,14 @@
 {#if record.locked && unlockedHtml === null}
   <div class="note-lock">
     <p class="note-lock-message">🔒 {LOCKED_SUMMARY}</p>
-    <div class="note-lock-form" role="group" aria-label="解锁笔记">
+    <div class="note-lock-form" role="group" aria-label="Unlock note">
       <input
         id="note-password"
         name="password"
         type="password"
         bind:this={passwordInput}
         bind:value={password}
-        placeholder="请输入密码"
+        placeholder="Password"
         autocomplete="current-password"
         autocapitalize="off"
         autocorrect="off"
@@ -143,14 +143,14 @@
         onkeydown={onPasswordKeydown}
       />
       <button type="button" onclick={unlock} disabled={busy}>
-        {busy ? '解锁中…' : '解锁'}
+        {busy ? 'Unlocking…' : 'Unlock'}
       </button>
     </div>
     {#if unlockError}
       <p class="note-lock-error" role="alert">{unlockError}</p>
     {/if}
     {#if busy}
-      <p class="note-lock-hint">正在解密，请稍候…</p>
+      <p class="note-lock-hint">Decrypting…</p>
     {/if}
   </div>
 {:else if record.html || unlockedHtml}

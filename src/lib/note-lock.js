@@ -11,7 +11,7 @@
  * @property {string} data Ciphertext followed by the 16-byte GCM tag, base64.
  */
 
-export const LOCKED_SUMMARY = '此笔记已加密，输入密码后查看。';
+export const LOCKED_SUMMARY = 'This note is encrypted. Enter the password to read it.';
 export const LOCK_PASSWORD_ENV = 'MOIRE_NOTES_PASSWORD';
 
 const PBKDF2_ITERATIONS = 310_000;
