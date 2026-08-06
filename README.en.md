@@ -177,6 +177,8 @@ full deployment reference.
 | Native tags | Reads real Apple Notes tags from the Notes database and builds the Tags page |
 | Link previews | Whitelisted YouTube, Apple Music, Spotify, Apple Podcasts/TV, maps, Bilibili, Xiaohongshu, GitHub, DOI, and related embeds |
 | Page options | Root, folder, and individual-note `name/value` tables with inheritance and overrides |
+| Note password lock | Per-note `password` / `密码`, or `locked` plus build-time `MOIRE_NOTES_PASSWORD`; AES-256-GCM at build, browser unlock; excluded from search/RSS/Sitemap/listings |
+| Accent hover UI | Sidebar, current section, titles, list titles, and footer links use the site accent (`--accent` / `/settings/` link color) on hover |
 | Site settings | Password-protected `/settings/` for identity, colors, social links, and display switches |
 | Publishing safety | Safe local paths only; non-`blog` branches refuse publishing; the settings API can only write `site.config.json` |
 
@@ -191,7 +193,7 @@ page fetches during local export or remote builds.
 | `/settings/` / `site.config.json` | Site title, author, domain, colors, social links, and default display switches |
 | Root `index` | Home content, Sidebar/Header/Footer navigation, and public-section allowlist |
 | Folder `index` `name/value` table | Section layout, ordering, child visibility, and section defaults |
-| Ordinary note `name/value` table | Note date, slug, aliases, navigation, metadata, and display overrides |
+| Ordinary note `name/value` table | Note date, slug, aliases, navigation, metadata, display overrides, and per-note password lock (`password` / `密码` / `locked`) |
 | Note body | Article content, images, tags, links, and attachments |
 
 Page options inherit in this order:

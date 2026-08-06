@@ -125,3 +125,13 @@ Home、Tags、Archive、Search、QR 以及 XML/文本端点都是自动生成的
 ```
 
 并在 Cloudflare Pages 的环境变量中设置 `MOIRE_NOTES_PASSWORD=你的统一密码`（本地构建则在 `pnpm build` 前 `export MOIRE_NOTES_PASSWORD=...`）。
+
+## 交互强调色
+
+站点链接色（`/settings/` 中的链接色，对应 CSS 变量 `--accent`）会用于：
+
+- 左侧导航悬停与当前栏目高亮
+- 页面标题、列表/表格/Feed 标题悬停
+- 页脚工具链接与作者链接悬停
+
+未单独配置时回退到主题默认强调色。

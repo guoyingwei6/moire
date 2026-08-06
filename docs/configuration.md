@@ -124,3 +124,40 @@ The public domain and SvelteKit base path remain separate:
 - Project Pages site at `/moire`: build with `BASE_PATH=/moire`.
 
 Changing the `/settings/` site domain updates canonical URLs, feeds, Sitemap and QR output. It does not configure DNS, GitHub Pages or Cloudflare custom-domain bindings itself.
+
+## Note password protection
+
+Add a `name/value` configuration table to an ordinary note with a `password` field to lock that note:
+
+```markdown
+| name | value |
+| --- | --- |
+| password | your-password |
+```
+
+Chinese field name `密码` is also accepted. A locked note will:
+
+- encrypt its rendered HTML at build time with **AES-256-GCM** (PBKDF2 key derivation) and store only ciphertext in the page
+- show a lock prompt; readers decrypt and render the body in the browser after entering the correct password
+- be excluded from search indexes, RSS feeds, the sitemap, and section listings
+- never ship the plaintext body or password value in static build output
+
+To use one shared password instead of writing it into every note, add:
+
+```markdown
+| name | value |
+| --- | --- |
+| locked | yes |
+```
+
+and set Cloudflare Pages environment variable `MOIRE_NOTES_PASSWORD=your-shared-password` (or `export MOIRE_NOTES_PASSWORD=...` before a local `pnpm build`).
+
+## Accent hover UI
+
+The site link color from `/settings/` (CSS variable `--accent`) is used for:
+
+- sidebar navigation hover and the current section highlight
+- page title hover, plus list/table/feed title hover
+- footer utility links and author link hover
+
+If unset, the theme default accent is used.

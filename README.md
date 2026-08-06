@@ -164,6 +164,8 @@ Token 或密码写进仓库、前端代码或 URL。完整部署说明见
 | 原生标签 | 从 Notes 数据库读取真正的 Apple Notes tags，并生成 Tags 页面 |
 | 链接预览 | YouTube、Apple Music、Spotify、Apple Podcasts/TV、地图、Bilibili、小红书、GitHub、DOI 等白名单类型 |
 | 页面设置 | 根/文件夹/单篇笔记的 `name/value` 表格；继承与覆盖规则 |
+| 笔记密码保护 | 单篇笔记 `password` / `密码` 或 `locked` + `MOIRE_NOTES_PASSWORD`；构建时 AES-256-GCM 加密，浏览器输入密码后解密；不进搜索/RSS/Sitemap/列表 |
+| 交互强调色 | 侧栏导航、当前栏目、页面标题、列表标题与页脚链接悬停使用站点强调色（`--accent` / `/settings/` 链接色） |
 | 全站设置 | 密码保护的 `/settings/`；修改标题、作者、颜色、社交链接和显示开关 |
 | 发布安全 | 只允许安全本地路径；非 `blog` 分支拒绝发布；设置 API 只能写 `site.config.json` |
 
@@ -177,7 +179,7 @@ Token 或密码写进仓库、前端代码或 URL。完整部署说明见
 | `/settings/` / `site.config.json` | 网站标题、作者、域名、颜色、社交链接和默认显示开关 |
 | 根 `index` | 首页正文、Sidebar/Header/Footer 导航和公开栏目白名单 |
 | 文件夹 `index` 的 `name/value` 表 | 栏目布局、排序、子级显示和栏目默认项 |
-| 普通笔记的 `name/value` 表 | 当前笔记的日期、slug、aliases、导航、元数据和显示覆盖 |
+| 普通笔记的 `name/value` 表 | 当前笔记的日期、slug、aliases、导航、元数据、显示覆盖，以及单篇密码保护（`password` / `密码` / `locked`） |
 | 笔记正文 | 实际文章、图片、标签、链接和附件 |
 
 页面级选项按下面的顺序覆盖：
