@@ -99,3 +99,29 @@ Home、Tags、Archive、Search、QR 以及 XML/文本端点都是自动生成的
 - 位于 `/moire` 的项目 Pages 站点：使用 `BASE_PATH=/moire` 构建。
 
 修改 `/settings/` 中的站点域名会更新规范 URL、订阅、Sitemap 和 QR 输出。它不会自行配置 DNS、GitHub Pages 或 Cloudflare 自定义域名绑定。
+
+## 笔记密码保护
+
+在单篇笔记中加一个 `name/value` 配置表，设置 `password` 字段，即可为该笔记启用密码锁定：
+
+```markdown
+| name | value |
+| --- | --- |
+| password | 你的密码 |
+```
+
+被锁定的笔记将：
+- 在构建时将正文 HTML 用 **AES-256-GCM**（PBKDF2 密钥派生）加密，密文存入页面
+- 显示锁定提示和密码输入框，读者在浏览器端输入正确密码后解密并渲染内容
+- **不**出现在搜索索引、RSS 订阅、站点地图和章节列表中
+- 原文和密码值不会以明文形式出现在任何构建产物里
+
+如果想用统一密码而不是在每篇笔记里写密码，可以在 Apple Notes 中添加：
+
+```markdown
+| name | value |
+| --- | --- |
+| locked | yes |
+```
+
+并在 Cloudflare Pages 的环境变量中设置 `MOIRE_NOTES_PASSWORD=你的统一密码`（本地构建则在 `pnpm build` 前 `export MOIRE_NOTES_PASSWORD=...`）。

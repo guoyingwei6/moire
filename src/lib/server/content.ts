@@ -28,6 +28,9 @@ import {
 import { buildAliasEntries } from '$lib/server/aliases.js';
 import { toListingEntry, toSearchEntries } from '$lib/server/content-projection.js';
 import { renderMarkdownDocument } from '$lib/server/markdown.js';
+import { LOCK_PASSWORD_ENV, LOCKED_SUMMARY, encryptNoteHtml } from '$lib/note-lock.js';
+import type { LockedPayload } from '$lib/note-lock.js';
+import { env } from '$env/dynamic/private';
 import { config } from '../../../moire.config';
 
 const markdownModules = import.meta.glob('/content/**/*.md', {
@@ -73,6 +76,8 @@ type DraftRecord = {
   tags: string[];
   parentRoute: string | null;
   hidden: boolean;
+  locked: boolean;
+  password: string | null;
   localProperties: Record<string, string>;
 };
 
@@ -280,6 +285,36 @@ function resolveImageSet(href: string, sourcePath: string): { href: string; src:
   };
 }
 
+const LOCK_PROPERTY_NAMES = ['password', '密码'];
+const LOCKED_MARKER_NAMES = ['locked', '锁定', 'private'];
+
+function noteLockState(
+  properties: Record<string, string>,
+  sourcePath: string
+): { locked: boolean; password: string | null } {
+  for (const name of LOCK_PROPERTY_NAMES) {
+    const value = properties[name];
+    if (value) return { locked: true, password: value };
+  }
+  for (const name of LOCKED_MARKER_NAMES) {
+    const value = properties[name];
+    if (value === undefined) continue;
+    const enabled = parseBooleanProperty(value);
+    if (enabled === null) {
+      throw new Error(`Invalid locked marker in ${sourcePath || 'note'}: ${value}`);
+    }
+    if (!enabled) return { locked: false, password: null };
+    const unified = env[LOCK_PASSWORD_ENV];
+    if (!unified) {
+      throw new Error(
+        `Note ${sourcePath || 'note'} is locked without a password: set ${LOCK_PASSWORD_ENV} at build time or add a password row.`
+      );
+    }
+    return { locked: true, password: unified };
+  }
+  return { locked: false, password: null };
+}
+
 function buildDrafts(): DraftRecord[] {
   return Object.entries(markdownModules).map(([sourcePath, raw]) => {
     const { metadata, body: rawBody } = parseFrontmatter(raw);
@@ -290,7 +325,8 @@ function buildDrafts(): DraftRecord[] {
       ? { ...metadata, title: noteConfiguration.properties.title }
       : metadata;
     const extracted = extractTitle(noteConfiguration.cleanedMarkdown, titleMetadata, sourcePath);
-    const hidden = isUnderscoreDraft(sourcePath, extracted.title);
+    const lockState = noteLockState(noteConfiguration.properties, sourcePath);
+    const hidden = isUnderscoreDraft(sourcePath, extracted.title) || lockState.locked;
     const { body, tags: inlineTags } = extractTags(extracted.body);
     const tags = [...new Set([
       ...parseListProperty(metadata.tags),
@@ -311,6 +347,8 @@ function buildDrafts(): DraftRecord[] {
       tags,
       parentRoute: parentRouteFor(route, kind),
       hidden,
+      locked: lockState.locked,
+      password: lockState.password,
       localProperties: noteConfiguration.properties
     };
   });
@@ -343,6 +381,8 @@ function implicitSections(drafts: DraftRecord[]): DraftRecord[] {
         tags: [],
         parentRoute: parentRouteFor(route, 'section'),
         hidden: false,
+        locked: false,
+        password: null,
         localProperties: {}
       });
     }
@@ -355,8 +395,13 @@ const LOCAL_PROPERTIES = new Set([
   'aliases',
   'date',
   'layout',
+  'locked',
+  'password',
   'pinned',
   'previewprops',
+  'private',
+  '锁定',
+  '密码',
   'showchildren',
   'showinfooter',
   'showinmenu',
@@ -527,36 +572,62 @@ function buildRecords(): ContentRecord[] {
       draft.sourcePath
     );
     searchTextByRoute.set(draft.route, searchableText(draft.body));
+    const renderedHtml = draft.sourcePath
+      ? renderMarkdownDocument(draft.body, {
+          sourcePath: draft.sourcePath,
+          resolveImageHref: (href) => resolveAssetHref(href, draft.sourcePath),
+          resolveImageSet: (href) => resolveImageSet(href, draft.sourcePath),
+          resolveRootHref: hrefWithBase,
+          showTableOfContents
+        })
+      : '';
+    let html = renderedHtml;
+    if (draft.locked) {
+      if (!draft.password) {
+        throw new Error(`Locked note has no password: ${draft.sourcePath || draft.route}`);
+      }
+      if (draft.kind !== 'post') {
+        throw new Error(`Only ordinary notes can be locked: ${draft.sourcePath || draft.route}`);
+      }
+      lockedMaterialsByRoute.set(draft.route, { html: renderedHtml, password: draft.password });
+      html = '';
+    }
+    const publicProperties = { ...properties };
+    for (const name of [...LOCK_PROPERTY_NAMES, ...LOCKED_MARKER_NAMES]) {
+      delete publicProperties[name];
+    }
     return {
       route: draft.route,
       kind: draft.kind,
       sourcePath: draft.sourcePath || null,
       title: draft.title,
-      summary: summarize(draft.body),
-      html: draft.sourcePath
-        ? renderMarkdownDocument(draft.body, {
-            sourcePath: draft.sourcePath,
-            resolveImageHref: (href) => resolveAssetHref(href, draft.sourcePath),
-            resolveImageSet: (href) => resolveImageSet(href, draft.sourcePath),
-            resolveRootHref: hrefWithBase,
-            showTableOfContents
-          })
-        : '',
+      summary: draft.locked ? LOCKED_SUMMARY : summarize(draft.body),
+      html,
       created: draft.created,
       updated: draft.updated,
       tags: draft.tags,
       parentRoute: draft.parentRoute,
       hidden: draft.hidden,
-      properties,
+      locked: draft.locked,
+      lockedPayload: null,
+      properties: publicProperties,
       options: contentOptions(draft, properties),
-      wordCount,
-      readingMinutes: Math.max(1, Math.ceil(wordCount / 220))
+      wordCount: draft.locked ? 0 : wordCount,
+      readingMinutes: draft.locked ? 1 : Math.max(1, Math.ceil(wordCount / 220))
     };
   });
 }
 
 function asSummary(record: ContentRecord): ContentSummary {
-  const { html: _html, sourcePath: _sourcePath, wordCount: _wordCount, readingMinutes: _readingMinutes, ...summary } = record;
+  const {
+    html: _html,
+    sourcePath: _sourcePath,
+    wordCount: _wordCount,
+    readingMinutes: _readingMinutes,
+    locked: _locked,
+    lockedPayload: _lockedPayload,
+    ...summary
+  } = record;
   return summary;
 }
 
@@ -571,6 +642,8 @@ function compareContent(
   const rightDate = sortBy === 'update' ? right.updated : right.created;
   return (rightDate ?? '').localeCompare(leftDate ?? '') || left.title.localeCompare(right.title);
 }
+
+const lockedMaterialsByRoute = new Map<string, { html: string; password: string }>();
 
 const records = buildRecords();
 const recordsByRoute = new Map(records.map((record) => [record.route, record]));
@@ -653,6 +726,10 @@ const archiveGroups = buildArchiveGroupsIndex(discoverablePosts);
 function findRecord(route: string): ContentRecord | null {
   const normalized = route === '/' ? '/' : `/${route.split('/').filter(Boolean).join('/')}/`;
   return recordsByRoute.get(normalized) ?? null;
+}
+
+export function getLockedMaterial(route: string): { html: string; password: string } | null {
+  return lockedMaterialsByRoute.get(route) ?? null;
 }
 
 export function getHome(): ContentRecord {

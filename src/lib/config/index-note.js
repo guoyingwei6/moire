@@ -24,7 +24,7 @@ function normalizeHeader(value) {
 
 /** @param {string} value */
 export function normalizePropertyName(value) {
-  return value.trim().toLocaleLowerCase().replace(/[^a-z\d]/g, '');
+  return value.trim().toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 }
 
 /** @param {string} value */

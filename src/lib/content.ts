@@ -1,3 +1,5 @@
+import type { LockedPayload } from './note-lock.js';
+
 export type ContentKind = 'home' | 'section' | 'post';
 export type ContentLayout = 'list' | 'timeline' | 'feed' | 'grid' | 'table';
 export type ContentSort = 'create' | 'update' | 'title';
@@ -36,6 +38,8 @@ export type ContentRecord = ContentSummary & {
   html: string;
   wordCount: number;
   readingMinutes: number;
+  locked: boolean;
+  lockedPayload: LockedPayload | null;
 };
 
 export type ContentListingEntry = ContentSummary & {

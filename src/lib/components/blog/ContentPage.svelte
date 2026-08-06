@@ -2,6 +2,7 @@
   import { base } from '$app/paths';
   import type { ContentListingEntry, ContentRecord, ContentSummary } from '$lib/content';
   import { feedDiscovery } from '$lib/feed-policy.js';
+  import { LOCKED_SUMMARY, decryptNote } from '$lib/note-lock.js';
   import { config } from '../../../../moire.config';
   import SectionListing from './SectionListing.svelte';
 
@@ -22,6 +23,70 @@
   const href = (route: string) => `${base}${route}` || '/';
   const canonical = $derived(`${config.url.replace(/\/$/, '')}${record.route === '/' ? '/' : record.route}`);
   const displayTitle = $derived(record.kind === 'home' ? config.title : record.title);
+  let password = $state('');
+  let busy = $state(false);
+  let unlockError = $state('');
+  let unlockedHtml = $state<string | null>(null);
+  let passwordInput: HTMLInputElement | null = $state(null);
+
+  const readPassword = () => {
+    const values = [
+      password,
+      passwordInput?.value ?? '',
+      (typeof document !== 'undefined'
+        ? (document.getElementById('note-password') as HTMLInputElement | null)?.value ?? ''
+        : '')
+    ];
+    for (const value of values) {
+      const trimmed = value.trim();
+      if (trimmed) return trimmed;
+    }
+    return '';
+  };
+
+  const unlock = async (event?: Event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    if (busy) return;
+
+    if (!record.lockedPayload) {
+      unlockError = '缺少加密数据，请重新构建后再试。';
+      return;
+    }
+    if (typeof crypto === 'undefined' || !crypto.subtle) {
+      unlockError = '当前浏览器环境不支持解密，请用本机 http://127.0.0.1 打开。';
+      return;
+    }
+
+    const candidate = readPassword();
+    if (!candidate) {
+      unlockError = '请输入密码。';
+      passwordInput?.focus();
+      return;
+    }
+
+    password = candidate;
+    busy = true;
+    unlockError = '';
+    try {
+      unlockedHtml = await decryptNote(record.lockedPayload, candidate);
+    } catch (error) {
+      console.error('note unlock failed', error);
+      unlockError = '密码错误，请重试。';
+      passwordInput?.focus();
+      passwordInput?.select();
+    } finally {
+      busy = false;
+    }
+  };
+
+  const onPasswordKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void unlock(event);
+    }
+  };
+
   const feed = $derived(feedDiscovery(record, folder, config.title));
   const feedUrl = $derived(feed ? `${config.url.replace(/\/$/, '')}${feed.route}` : '');
   const pageTitle = $derived(record.kind === 'home' ? config.title : `${record.title} | ${config.title}`);
@@ -60,13 +125,41 @@
   </nav>
 {/if}
 
-{#if record.html}
+{#if record.locked && unlockedHtml === null}
+  <div class="note-lock">
+    <p class="note-lock-message">🔒 {LOCKED_SUMMARY}</p>
+    <div class="note-lock-form" role="group" aria-label="解锁笔记">
+      <input
+        id="note-password"
+        name="password"
+        type="password"
+        bind:this={passwordInput}
+        bind:value={password}
+        placeholder="请输入密码"
+        autocomplete="current-password"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        onkeydown={onPasswordKeydown}
+      />
+      <button type="button" onclick={unlock} disabled={busy}>
+        {busy ? '解锁中…' : '解锁'}
+      </button>
+    </div>
+    {#if unlockError}
+      <p class="note-lock-error" role="alert">{unlockError}</p>
+    {/if}
+    {#if busy}
+      <p class="note-lock-hint">正在解密，请稍候…</p>
+    {/if}
+  </div>
+{:else if record.html || unlockedHtml}
   <article
     class:home-article={record.kind === 'home'}
     class:photo-article={record.kind === 'post' && folder?.route === '/photo/'}
     class="markdown-content"
   >
-    {@html record.html}
+    {@html unlockedHtml ?? record.html}
   </article>
 {/if}
 
@@ -76,7 +169,7 @@
   <SectionListing {entries} layout={record.options.layout} previewProps={record.options.previewProps} />
 {/if}
 
-{#if record.kind === 'post'}
+{#if record.kind === 'post' && !record.locked}
   {#if record.options.showNoteMetadata}
     <dl class="post-metadata">
     {#if record.created}
@@ -98,3 +191,90 @@
     </nav>
   {/if}
 {/if}
+
+<style>
+  .note-lock {
+    box-sizing: border-box;
+    max-width: 28rem;
+    margin: 2.5rem auto;
+    padding: 1.75rem 1.5rem;
+    border: 1px solid color-mix(in srgb, var(--text, #000) 14%, transparent);
+    border-radius: 14px;
+    background: #fff;
+    text-align: center;
+    box-shadow: 0 8px 24px color-mix(in srgb, #000 6%, transparent);
+  }
+
+  .note-lock-message {
+    margin: 0 0 1.25rem;
+    font-size: 1.05rem;
+    color: var(--text, #000);
+    line-height: 1.6;
+  }
+
+  .note-lock-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .note-lock-form input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1.5px solid color-mix(in srgb, var(--text, #000) 22%, transparent);
+    border-radius: 10px;
+    background: #fff;
+    color: #000;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .note-lock-form input:focus {
+    outline: none;
+    border-color: var(--accent, #DDA832);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #DDA832) 24%, transparent);
+  }
+
+  .note-lock-form button {
+    padding: 0.8rem 1.25rem;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent, #DDA832);
+    color: #111;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+
+  .note-lock-form button:not(:disabled):hover {
+    filter: brightness(0.96);
+  }
+
+  .note-lock-form button:not(:disabled):active {
+    transform: scale(0.99);
+  }
+
+  .note-lock-form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .note-lock-hint {
+    margin: 0.75rem 0 0;
+    color: var(--secondary, #555);
+    font-size: 0.9rem;
+  }
+
+  .note-lock-error {
+    margin: 0.85rem 0 0;
+    color: #b42318;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.75rem;
+    background: color-mix(in srgb, #b42318 10%, #fff);
+    border-radius: 8px;
+  }
+</style>

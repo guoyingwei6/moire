@@ -1,7 +1,7 @@
 /**
  * Remove fields that belong only on a full note page.
  *
- * @param {{ html: string, sourcePath: string | null, wordCount: number, readingMinutes: number } & Record<string, unknown>} record
+ * @param {{ html: string, sourcePath: string | null, wordCount: number, readingMinutes: number, locked: boolean, lockedPayload: unknown } & Record<string, unknown>} record
  */
 export function toContentSummary(record) {
   const {
@@ -9,6 +9,8 @@ export function toContentSummary(record) {
     sourcePath: _sourcePath,
     wordCount: _wordCount,
     readingMinutes: _readingMinutes,
+    locked: _locked,
+    lockedPayload: _lockedPayload,
     ...summary
   } = record;
   return summary;
@@ -18,7 +20,7 @@ export function toContentSummary(record) {
  * Feed collections need the rendered note body; every other collection layout
  * keeps the lightweight summary payload it used before.
  *
- * @param {{ html: string, sourcePath: string | null, wordCount: number, readingMinutes: number } & Record<string, unknown>} record
+ * @param {{ html: string, sourcePath: string | null, wordCount: number, readingMinutes: number, locked: boolean, lockedPayload: unknown } & Record<string, unknown>} record
  * @param {string} layout
  */
 export function toListingEntry(record, layout) {

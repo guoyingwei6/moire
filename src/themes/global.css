@@ -122,10 +122,28 @@ input:focus-visible {
   padding: 0 0.5rem 0.5rem;
   color: var(--secondary);
   line-height: 1.4;
+  transition: color 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+}
+
+.site-navigation a:hover,
+.site-navigation a:focus-visible {
+  color: var(--accent);
+  opacity: 1;
+  filter: none;
 }
 
 .site-navigation a.selected {
-  filter: brightness(50%);
+  color: var(--accent);
+  font-weight: 600;
+  filter: none;
+  opacity: 1;
+}
+
+.site-navigation a.selected:hover,
+.site-navigation a.selected:focus-visible {
+  color: var(--accent);
+  opacity: 1;
+  filter: none;
 }
 
 .site-content {
@@ -145,6 +163,11 @@ input:focus-visible {
   font-size: 1.75rem;
   font-weight: 400;
   line-height: 1.15;
+  transition: color 0.15s ease;
+}
+
+.site-content > h1:hover {
+  color: var(--accent);
 }
 
 .site-header-navigation {
@@ -158,8 +181,23 @@ input:focus-visible {
   font-size: 0.875rem;
 }
 
+.site-header-navigation a {
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.site-header-navigation a:hover,
+.site-header-navigation a:focus-visible {
+  color: var(--accent);
+  opacity: 1;
+}
+
 .site-header-navigation a.selected {
   color: var(--text);
+}
+
+.site-header-navigation a.selected:hover,
+.site-header-navigation a.selected:focus-visible {
+  color: var(--accent);
 }
 
 .site-footer {
@@ -191,6 +229,16 @@ input:focus-visible {
   gap: 0 0.75rem;
   margin: 1rem 0;
   font-size: 0.875rem;
+}
+
+.site-footer nav a {
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.site-footer nav a:hover,
+.site-footer nav a:focus-visible {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .markdown-content {
@@ -812,6 +860,13 @@ input:focus-visible {
   color: var(--secondary);
   font-size: 0.75rem;
   text-transform: capitalize;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.folder-name:hover,
+.folder-name:focus-visible {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .post-tags a,
@@ -828,6 +883,13 @@ input:focus-visible {
   width: 100%;
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--divider);
+  transition: color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+a.section-list-item:hover,
+a.section-list-item:focus-visible {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .section-list-heading {
@@ -836,6 +898,19 @@ input:focus-visible {
   justify-content: space-between;
   gap: 1rem;
   line-height: 1.25;
+}
+
+.section-list-heading a,
+.section-table a {
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.section-list-heading a:hover,
+.section-list-heading a:focus-visible,
+.section-table a:hover,
+.section-table a:focus-visible {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .section-list-item time,
