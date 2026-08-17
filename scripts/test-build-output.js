@@ -81,6 +81,18 @@ for (const [route, title] of collectionFeeds) {
 
 const rootFeedXml = await readFile(path.join(buildDirectory, 'feed.xml'), 'utf8');
 const rootRssXml = await readFile(path.join(buildDirectory, 'rss.xml'), 'utf8');
+const sitemapXml = await readFile(path.join(buildDirectory, 'sitemap.xml'), 'utf8');
+assert.doesNotMatch(sitemapXml, /\/settings\//, 'noindex Settings must not be listed in the sitemap');
+const siteConfig = JSON.parse(await readFile(path.join(process.cwd(), 'site.config.json'), 'utf8'));
+if (!siteConfig.features.qrCode) {
+	assert.doesNotMatch(sitemapXml, /\/qr\//, 'disabled QR pages must not be listed in the sitemap');
+}
+if (!siteConfig.features.tags) {
+	assert.doesNotMatch(sitemapXml, /\/tags\//, 'disabled Tags pages must not be listed in the sitemap');
+}
+if (!siteConfig.features.archive) {
+	assert.doesNotMatch(sitemapXml, /\/archive\//, 'disabled Archive pages must not be listed in the sitemap');
+}
 assert.equal(rootRssXml, rootFeedXml, 'root feed.xml and rss.xml aliases must stay byte-identical');
 assert.match(rootFeedXml, /<title>GYW&apos;s Website<\/title>/, 'root feed must retain its existing channel identity');
 const rootChannelLink = rootFeedXml.match(/<channel>[\s\S]*?<link>([^<]+)<\/link>/)?.[1];

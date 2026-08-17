@@ -4,7 +4,7 @@
   "nextManifest": "content/.moire-manifest.json",
   "summary": {
     "upsert": 0,
-    "unchanged": 38,
+    "unchanged": 31,
     "remove": 0,
     "relocate": 0
   },
@@ -28,17 +28,7 @@
     {
       "path": "blog/mac-os-setting-preferences.md",
       "kind": "markdown",
-      "digest": "da09fb15880a146d01064b3b2723ea46eb8782678f9a848fd93bebab5acde50a"
-    },
-    {
-      "path": "blog/播客发布测试.md",
-      "kind": "markdown",
-      "digest": "0ee0fbf4ee29c6c243c1fd8052bd5df3e2a343a2824ec651e1e05c701ebe8296"
-    },
-    {
-      "path": "blog/症状.md",
-      "kind": "markdown",
-      "digest": "63b4778329050ee5e1ed7522b4724e9ac20db8a17018117276db01952af38b47"
+      "digest": "cc64faaa1d8ed4109eeec0be4318995b3074cef6a84e4be372c51e768c4646ae"
     },
     {
       "path": "index.md",
@@ -54,11 +44,6 @@
       "path": "media/11543ad73c56372f290b6e7432956a40.jpg",
       "kind": "media",
       "digest": "533bb951aa7bd8bbb2da64e78a3b90ccbdb42a544bed99df24c57aa17be95d50"
-    },
-    {
-      "path": "media/2c97c48bba12014eafd7d7d2599722ac.png",
-      "kind": "media",
-      "digest": "985da3db86de87eb5851f130789b6be163715e65638118b37ad7215db005d8b6"
     },
     {
       "path": "media/309b4833d1e1ee18672f3f9145e8e24f.png",
@@ -96,34 +81,14 @@
       "digest": "61a62edefd755449e051cb52c0382f6d1a93485be257b73e7c6069d42ae7949f"
     },
     {
-      "path": "media/attachments/c86a57b43646b5542263fe41de8de75a.m4a",
-      "kind": "media",
-      "digest": "0e0bf91eba5212ccb1f533d0253b5bc77d72a6fa90a82a50a72cd56c6f0fbba9"
-    },
-    {
-      "path": "media/attachments/ec80bb801e1ec29e6da0f33a73bb82b4.pdf",
-      "kind": "media",
-      "digest": "f9997d5874f4d177b22dd4740e614d99784b56d084667f311b51f14a1cd036f1"
-    },
-    {
       "path": "media/d428d83872634947f6ed2d06dbd08ca5.heic",
       "kind": "media",
       "digest": "5938c226e4e72acc205dd24a6e732a0f3c349cbbdbe1da8230414d4159df7140"
     },
     {
-      "path": "media/df20c838cba7e2f7e64c8ad9114a9ced.png",
-      "kind": "media",
-      "digest": "90c80945f6589d9f3dbe587d7f020fc72f9722a484ac2db1900f43822404364d"
-    },
-    {
       "path": "media/f7a9e989fa2fe12370711de6a94756a7.heic",
       "kind": "media",
       "digest": "766e357eb60bbe3b714288b25dbe2db3536695129f0628f58db1c462fb0edc92"
-    },
-    {
-      "path": "media/f9b2939caf33b4bd6b6b5cd277ef4c97.jpg",
-      "kind": "media",
-      "digest": "82a6740833c9bc1e0bf2bb19f6ec541f65daf6acb9aa17e75293c392d3c363db"
     },
     {
       "path": "music/boku-ga-shinou-to-omottanowa.md",
@@ -168,7 +133,7 @@
     {
       "path": "photo/portrait.md",
       "kind": "markdown",
-      "digest": "cb709bf61e803387c8015a53c876d1fa236327b35a8fc4f36ef7c25e9b9b7ec9"
+      "digest": "e86da28677e5ea48bd6108d971356d09ae02120a5504e78821ab02325116acf2"
     },
     {
       "path": "photo/scenery.md",

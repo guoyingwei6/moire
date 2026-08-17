@@ -820,12 +820,12 @@ export function getArchiveGroups(): ArchiveGroup[] {
 export function getAllPublicRoutes(): string[] {
   return [
     ...records.filter((record) => isDiscoverable(record) && !record.locked).map((record) => record.route),
-    '/tags/',
-    ...tagGroups.map((group) => `/tags/${encodeURIComponent(group.slug)}/`),
-    '/archive/',
+    ...(config.features.tags
+      ? ['/tags/', ...tagGroups.map((group) => `/tags/${encodeURIComponent(group.slug)}/`)]
+      : []),
+    ...(config.features.archive ? ['/archive/'] : []),
     '/search/',
-    '/settings/',
-    '/qr/',
+    ...(config.features.qrCode ? ['/qr/'] : []),
     '/feed.xml',
     '/sitemap.xml'
   ];

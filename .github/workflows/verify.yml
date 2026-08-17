@@ -1,0 +1,39 @@
+name: Verify blog
+
+on:
+  push:
+    branches: ["blog"]
+  pull_request:
+    branches: ["blog"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "verify-blog-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify
+        run: pnpm verify

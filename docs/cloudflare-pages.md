@@ -18,7 +18,7 @@ blog -> Cloudflare Pages -> https://moireblog.guoyingwei.top
 Use these settings for the `blog` site:
 
 - Production branch: `blog`
-- Build command: `pnpm build`
+- Build command: `pnpm verify`
 - Build output directory: `build`
 - Root directory: repository root
 - `VITE_SITE_URL`: not required; site domain is controlled by `/settings/` and `site.config.json`
@@ -32,7 +32,7 @@ Use these settings for the `blog` site:
 Do not commit them to the repository, frontend code or URLs. The settings API
 still only writes `site.config.json` on the `blog` branch.
 
-`pnpm build` runs the `prebuild` script first:
+`pnpm verify` runs the tests and type checks before the build. Its build step runs the `prebuild` script first:
 
 ```sh
 node scripts/notes/build-content-from-export.mjs \

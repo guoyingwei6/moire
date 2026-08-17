@@ -13,7 +13,7 @@ Notes.app on macOS
   -> scripts/notes/export-macos-notes.mjs
   -> notes-export/public-notes.json
   -> git commit/push origin/blog
-  -> Cloudflare Pages runs pnpm build
+  -> Cloudflare Pages runs pnpm verify
   -> scripts/notes/build-content-from-export.mjs regenerates content/**
 ```
 
@@ -97,7 +97,9 @@ Automatic publish with push:
 pnpm notes:publish:push
 ```
 
-The publish script refuses to run unless the current Git branch is `blog`. It first runs `git pull --ff-only origin blog` so web settings commits are integrated, then commits only `notes-export/public-notes.json`, and only when that file changed.
+The publish script refuses to run unless the current Git branch is `blog`. It refuses to start when the index already contains staged files, then runs `git pull --ff-only origin blog` so web settings commits are integrated. The exporter writes diagnostics and compares note, tag and attachment counts with the previous snapshot; only a healthy changed snapshot is committed, and the commit is limited to `notes-export/public-notes.json`.
+
+The default safety threshold allows up to a 50% decrease in each count. Set `MOIRE_NOTES_MAX_DROP_RATIO` (for example, `0.8`) only when a deliberately large deletion is expected.
 
 ## LaunchAgent
 

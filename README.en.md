@@ -148,7 +148,7 @@ Create a Pages project with:
 
 ```text
 Production branch: blog
-Build command: pnpm build
+Build command: pnpm verify
 Build output directory: build
 Root directory: repository root
 ```
@@ -226,7 +226,7 @@ pnpm notes:agent:restart    # reload the LaunchAgent
 pnpm notes:agent:uninstall  # stop automatic sync
 pnpm test                   # content and security tests
 pnpm check                  # Svelte / TypeScript checks
-pnpm build                  # complete static build
+pnpm verify                 # tests, checks, build, and output validation
 pnpm test:build             # validate generated output
 ```
 

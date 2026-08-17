@@ -136,7 +136,7 @@ pnpm notes:publish:push
 
 ```text
 Production branch: blog
-Build command: pnpm build
+Build command: pnpm verify
 Build output directory: build
 Root directory: repository root
 ```
@@ -211,7 +211,7 @@ pnpm notes:agent:restart    # 重新载入 LaunchAgent
 pnpm notes:agent:uninstall  # 停止自动同步
 pnpm test                   # 内容与安全测试
 pnpm check                  # Svelte / TypeScript 检查
-pnpm build                  # 完整静态构建
+pnpm verify                 # 测试、检查、构建和产物验证
 pnpm test:build             # 检查构建产物
 ```
 

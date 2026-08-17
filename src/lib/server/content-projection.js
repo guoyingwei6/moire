@@ -9,7 +9,6 @@ export function toContentSummary(record) {
     sourcePath: _sourcePath,
     wordCount: _wordCount,
     readingMinutes: _readingMinutes,
-    locked: _locked,
     lockedPayload: _lockedPayload,
     ...summary
   } = record;
@@ -32,7 +31,7 @@ export function toListingEntry(record, layout) {
  * Build the static client-side index from real, non-hidden source notes only.
  * Implicit folder records have no sourcePath and contain no searchable body.
  *
- * @param {Array<{ route: string, sourcePath: string | null, hidden: boolean, title: string, summary: string, tags: string[], kind: string, created: string | null }>} records
+ * @param {Array<{ route: string, sourcePath: string | null, hidden: boolean, locked: boolean, title: string, summary: string, tags: string[], kind: string, created: string | null }>} records
  * @param {Map<string, string>} textByRoute
  * @param {(route: string) => string} hrefForRoute
  */

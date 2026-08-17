@@ -27,6 +27,7 @@ const record = (overrides = {}) => ({
   kind: 'post',
   parentRoute: '/blog/',
   hidden: false,
+  locked: false,
   properties: {},
   options,
   sourcePath: '/content/blog/public-note.md',
@@ -68,6 +69,7 @@ assert.equal(JSON.stringify(index).includes('Private draft terms'), false, 'hidd
 
 const feedEntry = toListingEntry(publicRecord, 'feed');
 assert.equal(feedEntry.html, publicRecord.html, 'feed entries must contain complete rendered HTML');
+assert.equal(feedEntry.locked, false, 'listing summaries must preserve the lock state');
 for (const layout of ['list', 'timeline', 'grid', 'table']) {
   assert.equal('html' in toListingEntry(publicRecord, layout), false, `${layout} entries must remain lightweight summaries`);
 }

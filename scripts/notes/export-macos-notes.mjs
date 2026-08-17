@@ -20,6 +20,7 @@ const includeDrafts = args.get('include-drafts') === 'true';
 const includeExportedAt = args.get('include-exported-at') === 'true';
 const notesHome = resolve(args.get('notes-home') || `${homedir()}/Library/Group Containers/group.com.apple.notes`);
 const noteStore = resolve(args.get('note-store') || `${notesHome}/NoteStore.sqlite`);
+const diagnosticsOutput = resolve(args.get('diagnostics-out') || 'logs/notes-export-last.json');
 
 const jxa = String.raw`
 function isDraftName(name) {
@@ -101,27 +102,101 @@ if (result.status !== 0) {
 }
 
 const parsed = JSON.parse(result.stdout);
-attachNativeTags(parsed, noteStore);
-attachNativeAttachments(parsed, noteStore, notesHome);
-const serialized = JSON.stringify(parsed);
-mkdirSync(dirname(output), { recursive: true });
-writeFileSync(output, serialized);
-const noteCount = parsed.root.notes.length + parsed.sections.reduce((sum, section) => sum + section.notes.length, 0);
-console.log(JSON.stringify({
-  output,
-  root: parsed.root.name,
-  sections: parsed.sections.map((section) => ({ name: section.name, notes: section.notes.length })),
-  noteCount,
-  nativeTags: countNativeTags(parsed),
-  attachments: countNativeAttachments(parsed),
-  bytes: Buffer.byteLength(serialized)
-}, null, 2));
+const diagnostics = createDiagnostics(parsed, noteStore, notesHome);
+attachNativeTags(parsed, noteStore, diagnostics);
+attachNativeAttachments(parsed, noteStore, notesHome, diagnostics);
+parsed.exportDiagnostics = diagnostics;
+writeDiagnostics(diagnosticsOutput, parsed, noteStore, notesHome);
+if (diagnostics.status !== 'ok') {
+  console.log(JSON.stringify({
+    output,
+    root: parsed.root.name,
+    status: diagnostics.status,
+    diagnostics
+  }, null, 2));
+  process.exitCode = 1;
+} else {
+  const serialized = JSON.stringify(parsed);
+  mkdirSync(dirname(output), { recursive: true });
+  writeFileSync(output, serialized);
+  const noteCount = parsed.root.notes.length + parsed.sections.reduce((sum, section) => sum + section.notes.length, 0);
+  console.log(JSON.stringify({
+    output,
+    root: parsed.root.name,
+    sections: parsed.sections.map((section) => ({ name: section.name, notes: section.notes.length })),
+    noteCount,
+    nativeTags: countNativeTags(parsed),
+    attachments: countNativeAttachments(parsed),
+    bytes: Buffer.byteLength(serialized)
+  }, null, 2));
+}
 
-function attachNativeTags(snapshot, databasePath) {
+function createDiagnostics(snapshot, databasePath, notesDirectory) {
+  const diagnostics = {
+    status: 'ok',
+    reasons: [],
+    database: {
+      exists: existsSync(databasePath)
+    },
+    tags: {
+      status: 'not-run',
+      expectedNotes: allNotes(snapshot).length,
+      queryRows: 0,
+      taggedNotes: 0
+    },
+    attachments: {
+      status: 'not-run',
+      expectedRows: 0,
+      queryRows: 0,
+      attached: 0,
+      skippedImages: 0,
+      missingFiles: 0,
+      readErrors: 0
+    },
+    notesDirectory: {
+      accountsExists: existsSync(join(notesDirectory, 'Accounts'))
+    }
+  };
+  if (!diagnostics.database.exists) {
+    degrade(diagnostics, 'NoteStore.sqlite does not exist; native tags and attachments could not be verified');
+  }
+  return diagnostics;
+}
+
+function degrade(diagnostics, reason) {
+  diagnostics.status = 'degraded';
+  if (!diagnostics.reasons.includes(reason)) diagnostics.reasons.push(reason);
+}
+
+function writeDiagnostics(path, snapshot, databasePath, notesDirectory) {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify({
+    at: new Date().toISOString(),
+    output,
+    exporter: snapshot.exporter,
+    databasePath,
+    notesDirectory,
+    diagnostics: snapshot.exportDiagnostics
+  }, null, 2)}\n`);
+}
+
+function attachNativeTags(snapshot, databasePath, diagnostics) {
   const notes = allNotes(snapshot);
-  if (!notes.length || !existsSync(databasePath)) return;
+  diagnostics.tags.expectedNotes = notes.length;
+  if (!notes.length) {
+    diagnostics.tags.status = 'not-needed';
+    return;
+  }
+  if (!existsSync(databasePath)) {
+    diagnostics.tags.status = 'degraded';
+    return;
+  }
   const ids = notes.map((note) => notePrimaryKey(note.id)).filter((id) => id !== null);
-  if (!ids.length) return;
+  if (!ids.length) {
+    diagnostics.tags.status = 'degraded';
+    degrade(diagnostics, 'No Apple Notes primary keys were available for the native tag query');
+    return;
+  }
   const query = [
     '.mode tabs',
     '.headers off',
@@ -136,7 +211,11 @@ function attachNativeTags(snapshot, databasePath) {
     encoding: 'utf8',
     maxBuffer: 8 * 1024 * 1024
   });
-  if (tagResult.status !== 0) return;
+  if (tagResult.status !== 0) {
+    diagnostics.tags.status = 'degraded';
+    degrade(diagnostics, 'SQLite native tag query failed');
+    return;
+  }
   const tagsByNote = new Map();
   for (const line of tagResult.stdout.split(/\r?\n/)) {
     if (!line.trim()) continue;
@@ -147,6 +226,9 @@ function attachNativeTags(snapshot, databasePath) {
     if (!tags.includes(tag)) tags.push(tag);
     tagsByNote.set(id, tags);
   }
+  diagnostics.tags.queryRows = [...tagsByNote.values()].reduce((sum, tags) => sum + tags.length, 0);
+  diagnostics.tags.taggedNotes = tagsByNote.size;
+  diagnostics.tags.status = 'ok';
   for (const note of notes) {
     const id = notePrimaryKey(note.id);
     const tags = id === null ? [] : tagsByNote.get(String(id)) ?? [];
@@ -154,11 +236,22 @@ function attachNativeTags(snapshot, databasePath) {
   }
 }
 
-function attachNativeAttachments(snapshot, databasePath, notesDirectory) {
+function attachNativeAttachments(snapshot, databasePath, notesDirectory, diagnostics) {
   const notes = allNotes(snapshot);
-  if (!notes.length || !existsSync(databasePath)) return;
+  if (!notes.length) {
+    diagnostics.attachments.status = 'not-needed';
+    return;
+  }
+  if (!existsSync(databasePath)) {
+    diagnostics.attachments.status = 'degraded';
+    return;
+  }
   const noteIds = notes.map((note) => notePrimaryKey(note.id)).filter((id) => id !== null);
-  if (!noteIds.length) return;
+  if (!noteIds.length) {
+    diagnostics.attachments.status = 'degraded';
+    degrade(diagnostics, 'No Apple Notes primary keys were available for the native attachment query');
+    return;
+  }
   const query = [
     '.mode tabs',
     '.headers off',
@@ -175,31 +268,66 @@ function attachNativeAttachments(snapshot, databasePath, notesDirectory) {
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024
   });
-  if (attachmentResult.status !== 0) return;
+  if (attachmentResult.status !== 0) {
+    diagnostics.attachments.status = 'degraded';
+    degrade(diagnostics, 'SQLite native attachment query failed');
+    return;
+  }
 
   const rows = attachmentResult.stdout
     .split(/\r?\n/)
     .filter((line) => line.trim())
     .map((line) => parseAttachmentRow(line));
-  if (!rows.length) return;
+  diagnostics.attachments.queryRows = rows.length;
+  diagnostics.attachments.expectedRows = rows.length;
+  if (!rows.length) {
+    diagnostics.attachments.status = 'ok';
+    return;
+  }
 
   const mediaIds = [...new Set(rows.map((row) => row.mediaId).filter(Boolean))];
-  const mediaById = mediaIds.length ? readMediaRows(databasePath, mediaIds) : new Map();
+  const mediaResult = mediaIds.length ? readMediaRows(databasePath, mediaIds) : { mediaById: new Map(), ok: true };
+  const mediaById = mediaResult.mediaById;
+  if (!mediaResult.ok) {
+    diagnostics.attachments.status = 'degraded';
+    degrade(diagnostics, 'SQLite native media lookup failed');
+  }
+  const fileIndex = buildAttachmentFileIndex(join(notesDirectory, 'Accounts'));
   const notesByPrimaryKey = new Map(notes
     .map((note) => [notePrimaryKey(note.id), note])
     .filter(([id]) => id !== null));
 
   for (const row of rows) {
-    if (isImageUti(row.uti)) continue;
+    if (isImageUti(row.uti)) {
+      diagnostics.attachments.skippedImages += 1;
+      continue;
+    }
     const media = mediaById.get(row.mediaId);
-    const sourcePath = findAttachmentFile(notesDirectory, row, media);
-    if (!sourcePath) continue;
-    const buffer = readFileSync(sourcePath);
+    const sourcePath = findAttachmentFile(fileIndex, row, media);
+    if (!sourcePath) {
+      diagnostics.attachments.missingFiles += 1;
+      diagnostics.attachments.status = 'degraded';
+      degrade(diagnostics, 'One or more native attachments could not be found on disk');
+      continue;
+    }
+    let buffer;
+    try {
+      buffer = readFileSync(sourcePath);
+    } catch {
+      diagnostics.attachments.readErrors += 1;
+      diagnostics.attachments.status = 'degraded';
+      degrade(diagnostics, 'One or more native attachments could not be read');
+      continue;
+    }
     const extension = extensionForAttachment(buffer, row, media, sourcePath);
     const kind = attachmentKind(row.uti, extension);
     const title = row.title || row.filename || media?.filename || basename(sourcePath);
     const note = notesByPrimaryKey.get(row.noteId);
-    if (!note) continue;
+    if (!note) {
+      diagnostics.attachments.status = 'degraded';
+      degrade(diagnostics, 'A native attachment referenced an unknown note');
+      continue;
+    }
     const attachments = Array.isArray(note.attachments) ? note.attachments : [];
     attachments.push({
       id: String(row.pk),
@@ -217,7 +345,9 @@ function attachNativeAttachments(snapshot, databasePath, notesDirectory) {
       dataBase64: buffer.toString('base64')
     });
     note.attachments = attachments;
+    diagnostics.attachments.attached += 1;
   }
+  if (diagnostics.attachments.status === 'not-run') diagnostics.attachments.status = 'ok';
 }
 
 function parseAttachmentRow(line) {
@@ -265,7 +395,7 @@ function readMediaRows(databasePath, mediaIds) {
     maxBuffer: 8 * 1024 * 1024
   });
   const mediaById = new Map();
-  if (result.status !== 0) return mediaById;
+  if (result.status !== 0) return { mediaById, ok: false };
   for (const line of result.stdout.split(/\r?\n/)) {
     if (!line.trim()) continue;
     const [pk, identifier, filename, uti, size] = line.split('\t');
@@ -277,35 +407,13 @@ function readMediaRows(databasePath, mediaIds) {
       size: Number(size) || 0
     });
   }
-  return mediaById;
+  return { mediaById, ok: true };
 }
 
-function findAttachmentFile(notesDirectory, row, media) {
-  const accountsDirectory = join(notesDirectory, 'Accounts');
-  if (!existsSync(accountsDirectory)) return '';
-  if (row.identifier && isPdfUti(row.uti)) {
-    const pdfPath = findFirstFile(accountsDirectory, (filePath) => (
-      filePath.includes(`/FallbackPDFs/${row.identifier}/`) && /\.pdf$/i.test(filePath)
-    ));
-    if (pdfPath) return pdfPath;
-  }
-  if (media?.identifier) {
-    const mediaPath = findFirstFile(accountsDirectory, (filePath) => (
-      filePath.includes(`/Media/${media.identifier}/`)
-      && (!media.filename || basename(filePath) === media.filename)
-    ));
-    if (mediaPath) return mediaPath;
-    const anyMediaPath = findFirstFile(accountsDirectory, (filePath) => filePath.includes(`/Media/${media.identifier}/`));
-    if (anyMediaPath) return anyMediaPath;
-  }
-  if (row.identifier) {
-    return findFirstFile(accountsDirectory, (filePath) => filePath.includes(`/${row.identifier}/`));
-  }
-  return '';
-}
-
-function findFirstFile(root, predicate, maxDepth = 8) {
-  const stack = [{ directory: root, depth: 0 }];
+function buildAttachmentFileIndex(accountsDirectory, maxDepth = 8) {
+  if (!existsSync(accountsDirectory)) return [];
+  const files = [];
+  const stack = [{ directory: accountsDirectory, depth: 0 }];
   while (stack.length) {
     const current = stack.pop();
     if (!current || current.depth > maxDepth) continue;
@@ -324,13 +432,39 @@ function findFirstFile(root, predicate, maxDepth = 8) {
       if (!entry.isFile()) continue;
       try {
         const info = statSync(path);
-        if (info.size > 0 && predicate(path)) return path;
+        if (info.size > 0) files.push(path);
       } catch {
-        continue;
+        // A file can disappear while Notes is syncing; it will be reported as missing.
       }
     }
   }
+  return files;
+}
+
+function findAttachmentFile(fileIndex, row, media) {
+  if (row.identifier && isPdfUti(row.uti)) {
+    const pdfPath = findFirstIndexedFile(fileIndex, (filePath) => (
+      filePath.includes(`/FallbackPDFs/${row.identifier}/`) && /\.pdf$/i.test(filePath)
+    ));
+    if (pdfPath) return pdfPath;
+  }
+  if (media?.identifier) {
+    const mediaPath = findFirstIndexedFile(fileIndex, (filePath) => (
+      filePath.includes(`/Media/${media.identifier}/`)
+      && (!media.filename || basename(filePath) === media.filename)
+    ));
+    if (mediaPath) return mediaPath;
+    const anyMediaPath = findFirstIndexedFile(fileIndex, (filePath) => filePath.includes(`/Media/${media.identifier}/`));
+    if (anyMediaPath) return anyMediaPath;
+  }
+  if (row.identifier) {
+    return findFirstIndexedFile(fileIndex, (filePath) => filePath.includes(`/${row.identifier}/`));
+  }
   return '';
+}
+
+function findFirstIndexedFile(fileIndex, predicate) {
+  return fileIndex.find(predicate) || '';
 }
 
 function allNotes(snapshot) {

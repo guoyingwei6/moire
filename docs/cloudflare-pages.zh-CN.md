@@ -18,7 +18,7 @@ blog -> Cloudflare Pages -> https://moireblog.guoyingwei.top
 `blog` 站点使用以下设置：
 
 - Production branch：`blog`
-- Build command：`pnpm build`
+- Build command：`pnpm verify`
 - Build output directory：`build`
 - Root directory：仓库根目录
 - `VITE_SITE_URL`：不需要；站点域名由 `/settings/` 和 `site.config.json` 控制
@@ -30,7 +30,7 @@ blog -> Cloudflare Pages -> https://moireblog.guoyingwei.top
 
 `GITHUB_TOKEN` 和 `SETTINGS_PASSWORD` 是 Cloudflare 环境变量。不要将它们提交到仓库、前端代码或 URL 中。设置 API 仍然只能修改 `blog` 分支上的 `site.config.json`。
 
-`pnpm build` 会先运行 `prebuild` 脚本：
+`pnpm verify` 会先运行测试和类型检查，再执行构建；其中构建步骤会先运行 `prebuild` 脚本：
 
 ```sh
 node scripts/notes/build-content-from-export.mjs \

@@ -38,19 +38,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test
-        run: pnpm test
-
-      - name: Check
-        run: pnpm check
-
-      - name: Build
-        run: pnpm run build
-        env:
-          BASE_PATH: /moire
-
-      - name: Validate build output
-        run: pnpm test:build
+      - name: Verify
+        run: pnpm verify
         env:
           BASE_PATH: /moire
 

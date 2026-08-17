@@ -22,6 +22,7 @@
 		"test:build": "node scripts/test-build-output.js",
 		"prepare": "svelte-kit sync",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"verify": "pnpm test && pnpm check && pnpm run build && pnpm test:build",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {

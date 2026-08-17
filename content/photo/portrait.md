@@ -1,9 +1,13 @@
 ---
 title: "Portrait"
 created: 2025-10-27
-updated: 2026-07-27
+updated: 2026-08-06
 tags: "Photo"
 ---
+
+| name | value |
+| --- | --- |
+| password | gyw |
 
 ::moire-gallery
 ![](../media/6305704eca2864f704b34139846ef88c.jpg)

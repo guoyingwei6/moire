@@ -13,7 +13,7 @@ macOS 上的 Notes.app
   -> scripts/notes/export-macos-notes.mjs
   -> notes-export/public-notes.json
   -> git commit/push origin/blog
-  -> Cloudflare Pages 运行 pnpm build
+  -> Cloudflare Pages 运行 pnpm verify
   -> scripts/notes/build-content-from-export.mjs 重新生成 content/**
 ```
 
@@ -94,7 +94,9 @@ pnpm notes:publish
 pnpm notes:publish:push
 ```
 
-除非当前 Git 分支为 `blog`，否则发布脚本会拒绝运行。它会先运行 `git pull --ff-only origin blog`，以整合网页设置产生的提交；随后仅在 `notes-export/public-notes.json` 发生变化时提交这个文件。
+除非当前 Git 分支为 `blog`，否则发布脚本会拒绝运行。若启动前暂存区已有文件，它也会拒绝运行；随后执行 `git pull --ff-only origin blog`，以整合网页设置产生的提交。导出器会写入诊断结果，并将笔记、标签和附件数量与上一次快照比较；只有健康检查通过且快照发生变化时，才会只提交 `notes-export/public-notes.json`。
+
+默认阈值允许每项数量最多下降 50%。只有在明确预期一次性大量删除时，才设置 `MOIRE_NOTES_MAX_DROP_RATIO`（例如 `0.8`）放宽阈值。
 
 ## LaunchAgent
 
