@@ -11,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
+        # 固定检出的就是 development，手动运行时无论选哪个分支都归档 dev 的笔记
         uses: actions/checkout@v4
         with:
+          ref: development
           fetch-depth: 0
 
       - name: Check for changes
