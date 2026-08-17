@@ -1,9 +1,7 @@
 name: Cleanup Unused Images
 
 on:
-  schedule:
-    - cron: '0 0 * * 0' # Weekly on Sunday at midnight
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch: # 仅手动触发，避免自动改动 main
 
 jobs:
   cleanup:
