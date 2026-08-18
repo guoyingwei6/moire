@@ -8,7 +8,7 @@
 
 - Cloudflare Pages 项目：`moire-development`，生产别名：<https://moire-development.pages.dev/>
 - GitHub Pages：<https://guoyingwei6.github.io/moire/>
-- 预期自定义域名：<https://moire.guoyingwei.top/>
+- Cloudflare 自定义域名：<https://moires.guoyingwei.top/>
 - 推送 `development` 会触发 GitHub Pages 的 `check → build → deploy`，Cloudflare Pages
   也会构建同一个分支。
 
