@@ -1,5 +1,5 @@
 
-import { marked } from 'marked';
+import { marked, Renderer } from 'marked';
 import { config } from '../../../moire.config';
 
 export type Memo = {
@@ -14,6 +14,88 @@ export type Memo = {
 const FRONTMATTER_PATTERN = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
 const TITLE_MAX_LENGTH = 160;
 const EXCERPT_MAX_LENGTH = 240;
+const TAG_PATTERN = /(^|\s)#([^\s#.,!?;:()\[\]"']+)/g;
+const VOID_HTML_ELEMENTS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'
+]);
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character] ?? character);
+}
+
+function renderMarkdownWithTags(markdown: string): { html: string; tags: string[] } {
+  const tags = new Set<string>();
+  let suppressTags = 0;
+  let rawHtmlDepth = 0;
+  const renderer = new Renderer();
+  const defaultText = renderer.text;
+  const defaultLink = renderer.link;
+  const defaultHtml = renderer.html;
+
+  const renderText = function (this: Renderer, token: Parameters<Renderer['text']>[0]): string {
+    if (suppressTags > 0 || rawHtmlDepth > 0 || token.type === 'escape') {
+      return defaultText.call(this, token);
+    }
+
+    const source = token.text;
+    const escaped = 'escaped' in token ? token.escaped : false;
+    TAG_PATTERN.lastIndex = 0;
+    let cursor = 0;
+    let output = '';
+    let match: RegExpExecArray | null;
+
+    while ((match = TAG_PATTERN.exec(source)) !== null) {
+      const tag = match[2];
+      output += defaultText.call(this, { type: 'text', raw: source.slice(cursor, match.index), text: source.slice(cursor, match.index), escaped });
+      output += defaultText.call(this, { type: 'text', raw: match[1], text: match[1], escaped });
+      output += `<button class="tag-link" data-tag="${escapeHtml(tag)}">#${escapeHtml(tag)}</button>`;
+      tags.add(tag);
+      cursor = TAG_PATTERN.lastIndex;
+    }
+
+    if (cursor === 0) return defaultText.call(this, token);
+    output += defaultText.call(this, { type: 'text', raw: source.slice(cursor), text: source.slice(cursor), escaped });
+    return output;
+  };
+
+  renderer.text = renderText;
+  renderer.link = function (token) {
+    suppressTags += 1;
+    try {
+      return defaultLink.call(this, token);
+    } finally {
+      suppressTags -= 1;
+    }
+  };
+  renderer.html = function (token) {
+    const html = token.text;
+    const result = defaultHtml.call(this, token);
+    const tagPattern = /<\/?([a-z][\w:-]*)(?:\s[^>]*)?>/gi;
+    let match: RegExpExecArray | null;
+    while ((match = tagPattern.exec(html)) !== null) {
+      const isClosing = match[0].startsWith('</');
+      const isSelfClosing = /\/\s*>$/.test(match[0]);
+      const tagName = match[1].toLowerCase();
+      if (isClosing) {
+        rawHtmlDepth = Math.max(0, rawHtmlDepth - 1);
+      } else if (!isSelfClosing && !VOID_HTML_ELEMENTS.has(tagName)) {
+        rawHtmlDepth += 1;
+      }
+    }
+    return result;
+  };
+
+  return {
+    html: marked.parse(markdown, { renderer }) as string,
+    tags: [...tags]
+  };
+}
 
 function decodeHtmlEntities(value: string): string {
   const namedEntities: Record<string, string> = {
@@ -189,12 +271,8 @@ async function loadMemos(): Promise<Memo[]> {
 
       let markdown = resolveAssets(markdownString, path);
 
-      markdown = markdown.replace(
-        /(^|\s)#([^\s#.,!?;:()\[\]"']+)/g,
-        '$1<button class="tag-link" data-tag="$2">#$2</button>'
-      );
-
-      const htmlContent = await marked.parse(markdown);
+      const rendered = renderMarkdownWithTags(markdown);
+      const htmlContent = rendered.html;
 
       let date = new Date();
 
@@ -220,20 +298,13 @@ async function loadMemos(): Promise<Memo[]> {
         date = created || filenameDate || new Date();
       }
 
-      let tags: string[] = [];
-      const tagMatch = markdownString.match(/#([^\s#.,!?;:()\[\]"']+)/g);
-      if (tagMatch) {
-        tags = tagMatch.map(t => t.slice(1));
-        tags = [...new Set(tags)];
-      }
-
       return {
         slug,
         title,
         excerpt,
         content: htmlContent,
         date,
-        tags
+        tags: rendered.tags
       };
     })
   );
@@ -246,4 +317,15 @@ async function loadMemos(): Promise<Memo[]> {
 export function getMemos(): Promise<Memo[]> {
   memoPromise ??= loadMemos();
   return memoPromise;
+}
+
+/**
+ * The classic homepage renders only memo titles. Keep the list metadata used
+ * by the page-level SEO schema and the full Memo shape for alternate themes,
+ * but omit rendered HTML from the classic page payload.
+ */
+export async function getHomepageMemos(): Promise<Memo[]> {
+  const memos = await getMemos();
+  if (config.theme !== 'classic') return memos;
+  return memos.map(({ content: _content, ...memo }) => ({ ...memo, content: '' }));
 }

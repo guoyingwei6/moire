@@ -10,7 +10,7 @@
   import Heatmap from '$lib/components/Heatmap.svelte';
 
   let {data}: {data: PageData} = $props();
-  const memoList = createMemoList(() => data, config);
+  const memoList = createMemoList(() => data, () => config);
 
   $effect(() => {
     if (memoList.selectedTag || memoList.selectedDate) {
@@ -121,6 +121,7 @@
                     if (tag) memoList.selectTag(tag);
                 }
              }}
+             role="presentation"
           >
             {@html marked.parse(memo.content)}
           </div>

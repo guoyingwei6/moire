@@ -1,9 +1,9 @@
 
 import type { PageServerLoad } from './$types';
-import { getMemos } from '$lib/server/memos';
+import { getHomepageMemos } from '$lib/server/memos';
 
 export const load: PageServerLoad = async () => {
-  const memos = await getMemos();
+  const memos = await getHomepageMemos();
 
   return {
     memos

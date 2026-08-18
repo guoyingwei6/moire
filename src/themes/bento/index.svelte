@@ -8,7 +8,7 @@
   import Heatmap from '$lib/components/Heatmap.svelte';
 
   let {data}: {data: PageData} = $props();
-  const memoList = createMemoList(() => data, config);
+  const memoList = createMemoList(() => data, () => config);
 
   $effect(() => {
     if (memoList.selectedTag || memoList.selectedDate) {
@@ -68,6 +68,7 @@
         onmousemove={handleMouseMove}
         id={memo.slug}
         style="--x: 50%; --y: 50%; animation-delay: {(i % 15) * 100}ms; animation-fill-mode: both;"
+        role="presentation"
       >
         <div
           class="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100"
@@ -104,6 +105,7 @@
                     if (tag) memoList.selectTag(tag);
                 }
              }}
+             role="presentation"
           >
             {@html marked.parse(memo.content)}
           </div>

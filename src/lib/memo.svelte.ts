@@ -1,7 +1,8 @@
 import { format } from 'date-fns';
 
-export function createMemoList(getData: () => any, config: any) {
-    let visibleCount = $state(config.pageSize || 20);
+export function createMemoList(getData: () => any, getConfig: () => any) {
+    const pageSize = () => getConfig().pageSize || 20;
+    let visibleCount = $state(pageSize());
     let selectedTag = $state<string | null>(null);
     let selectedDate = $state<string | null>(null);
 
@@ -36,17 +37,17 @@ export function createMemoList(getData: () => any, config: any) {
     });
 
     function loadMore() {
-        visibleCount += (config.pageSize || 20);
+        visibleCount += pageSize();
     }
 
     function selectTag(tag: string | null) {
         selectedTag = selectedTag === tag ? null : tag;
-        visibleCount = config.pageSize || 20;
+        visibleCount = pageSize();
     }
 
     function selectDate(date: string) {
         selectedDate = selectedDate === date ? null : date;
-        visibleCount = config.pageSize || 20;
+        visibleCount = pageSize();
     }
 
     return {

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 const imagesDir = path.resolve('src/memos/images');
 const memosDir = path.resolve('src/memos');
@@ -64,7 +64,7 @@ for (const image of unusedImages) {
   const imagePath = path.join('src/memos/images', image);
   try {
     console.log(`Removing ${imagePath}...`);
-    execSync(`git rm "${imagePath}"`);
+    execFileSync('git', ['rm', '--', imagePath], { stdio: 'inherit' });
   } catch (error) {
     console.error(`Failed to remove ${imagePath}: ${error.message}`);
     // Fallback to normal fs.unlink if git rm fails (e.g. file not tracked)
