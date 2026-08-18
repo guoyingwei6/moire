@@ -167,7 +167,7 @@ Token 或密码写进仓库、前端代码或 URL。完整部署说明见
 | 笔记密码保护 | 单篇笔记 `password` / `密码` 或 `locked` + `MOIRE_NOTES_PASSWORD`；构建时 AES-256-GCM 加密，浏览器输入密码后解密；列表中仍可见，但不进搜索/RSS/Sitemap |
 | 交互强调色 | 侧栏导航、当前栏目、页面标题、列表标题与页脚链接悬停使用站点强调色（`--accent` / `/settings/` 链接色） |
 | 全站设置 | 密码保护的 `/settings/`；修改标题、作者、颜色、社交链接和显示开关 |
-| 发布安全 | 只允许安全本地路径；非 `blog` 分支拒绝发布；设置 API 只能写 `site.config.json` |
+| 发布安全 | 只允许安全本地路径；非 `blog` 分支拒绝发布；发布前检查暂存区和快照健康度；设置 API 只能写 `site.config.json` |
 
 本项目不为任意网址生成通用预览。新增预览类型需要一条明确的白名单规则，避免在
 本地导出或远程构建时抓取未知页面。
@@ -218,6 +218,31 @@ pnpm test:build             # 检查构建产物
 LaunchAgent 不是一直占用资源的常驻 Node 进程。每次运行完成后退出，由 macOS
 `launchd` 在下个时间间隔重新启动；失败后也会在下一轮重试。
 
+## 发布安全与构建验证
+
+所有正式构建都通过同一条验证链：
+
+```text
+pnpm test → pnpm check → pnpm build → pnpm test:build
+```
+
+它由 `pnpm verify` 统一执行，并同时用于 Cloudflare Pages 构建和 `blog` 分支的
+push / Pull Request 验证。除了代码检查，构建产物还会验证 RSS/Feed、Sitemap、
+canonical URL、搜索页、设置页、永久笔记页和响应式图片输出。
+
+Notes 发布器还会执行以下保护：
+
+- 只允许在 `blog` 分支运行，并先用 `git pull --ff-only` 同步远端。
+- 发布前后都拒绝已有的无关暂存文件，提交时只暂存 `notes-export/public-notes.json`。
+- 导出器会记录数据库、原生标签和附件的诊断状态；数据库或附件异常时不会生成健康快照。
+- 新旧快照会比较笔记、标签和附件数量；异常大幅下降会停止自动提交，可用
+  `MOIRE_NOTES_MAX_DROP_RATIO` 显式调整阈值。
+- Notes Accounts 附件目录每次导出只建立一次索引，避免为每个附件重复扫描文件系统。
+- 正文引用的 HEIC/HEIF 如果没有成功生成可用 WebP，构建会失败，而不是静默发布不可用媒体。
+
+诊断文件写入 `logs/notes-export-last.json` 和 `logs/notes-publish-last.json`，便于检查
+最近一次导出与发布为什么成功或被阻止。
+
 ## 性能设计
 
 网站快的原因不只是使用 SvelteKit，而是整条交付路径都以静态内容为中心：
@@ -230,6 +255,8 @@ LaunchAgent 不是一直占用资源的常驻 Node 进程。每次运行完成�
 - 带内容哈希的 CSS、JavaScript 和派生媒体使用一年 `immutable` 缓存；
 - 上一篇/下一篇、Tags 和 Archive 在构建期预计算并复用；
 - 响应式图片按原图哈希增量生成，Cloudflare Build Cache 可跨部署复用。
+- Notes 附件查找使用单次建立的文件索引，避免附件数量增加时重复遍历 Accounts 目录；
+- 正文实际引用的 HEIC/HEIF 有明确的 WebP 失败门禁，避免把转换问题留到访客浏览器。
 
 因此，即使内容增加，访客打开一篇已经部署的文章仍然只是读取静态文件。真正需要
 观察的是远程构建时间；等真实规模需要时，再引入栏目分页或 Pagefind 分块搜索，
@@ -254,7 +281,7 @@ README 只负责介绍、首次部署和日常入口；细节按任务拆开：
 | 分支 | 作用 | 部署 |
 | --- | --- | --- |
 | `main` | 尽量保持原版/上游 Moire 路线 | <https://moire.guoyingwei.top> |
-| `development` | 极简标题列表路线；内容由 `main` 同步 | <https://moires.guoyingwei.top> |
+| `development` | 极简标题列表路线；内容由 `main` 同步 | <https://moire-development.pages.dev/> + <https://guoyingwei6.github.io/moire/> |
 | `blog` | 本 README 描述的 macOS Apple Notes 文件夹博客 | <https://moireblog.guoyingwei.top> |
 
 三条路线独立部署、互不覆盖。本地 Notes 发布器只允许向 `blog` 分支写入。

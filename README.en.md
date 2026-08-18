@@ -180,7 +180,7 @@ full deployment reference.
 | Note password lock | Per-note `password` / `密码`, or `locked` plus build-time `MOIRE_NOTES_PASSWORD`; AES-256-GCM at build, browser unlock; still listed, excluded from search/RSS/Sitemap |
 | Accent hover UI | Sidebar, current section, titles, list titles, and footer links use the site accent (`--accent` / `/settings/` link color) on hover |
 | Site settings | Password-protected `/settings/` for identity, colors, social links, and display switches |
-| Publishing safety | Safe local paths only; non-`blog` branches refuse publishing; the settings API can only write `site.config.json` |
+| Publishing safety | Safe local paths only; non-`blog` branches refuse publishing; staged-file and snapshot-health checks run before publishing; the settings API can only write `site.config.json` |
 
 The project intentionally does not generate generic previews for arbitrary
 URLs. A new preview type requires an explicit allowlist rule, avoiding unknown
@@ -234,6 +234,38 @@ The LaunchAgent is not a permanently running Node daemon. Each run exits, and
 macOS `launchd` starts a new run at the next interval. Failed runs are retried on
 the following interval.
 
+## Publishing safety and build verification
+
+Every production build uses the same verification chain:
+
+```text
+pnpm test → pnpm check → pnpm build → pnpm test:build
+```
+
+`pnpm verify` runs the chain for both Cloudflare Pages builds and the `blog`
+branch push / pull-request verification workflow. The generated site is also
+checked for RSS/Feed parity, Sitemap routes, canonical URLs, Search, Settings,
+permanent note pages, and responsive media output.
+
+The Notes publisher adds these safeguards:
+
+- It only runs on `blog` and fast-forward pulls the remote branch first.
+- It refuses unrelated staged files before and after export, and stages only
+  `notes-export/public-notes.json` for the commit.
+- The exporter records database, native-tag, and attachment diagnostics; a
+  degraded export does not become a healthy snapshot.
+- It compares note, tag, and attachment counts with the previous snapshot and
+  stops on an unexpectedly large drop. Set `MOIRE_NOTES_MAX_DROP_RATIO` only
+  when a deliberate deletion is expected.
+- The Notes Accounts directory is indexed once per export instead of rescanned
+  for every attachment.
+- A referenced HEIC/HEIF file must produce a usable WebP derivative or the
+  build fails instead of silently publishing unsupported media.
+
+Diagnostics are written to `logs/notes-export-last.json` and
+`logs/notes-publish-last.json`, so the last blocked or successful run can be
+inspected without reconstructing it from terminal output.
+
 ## Performance design
 
 The site feels fast because the whole delivery path is static-first, not merely
@@ -250,6 +282,10 @@ because it uses SvelteKit:
 - previous/next, Tags, and Archive data are computed once and reused;
 - responsive images are built incrementally by source hash and can be restored
   across deployments through Cloudflare Build Cache.
+- attachment lookup uses one filesystem index per export instead of repeatedly
+  walking the Notes Accounts directory;
+- referenced HEIC/HEIF conversion has an explicit WebP failure gate, so media
+  problems are reported during the build rather than in a visitor's browser.
 
 Opening an already deployed article remains a static-file request even as the
 library grows. Remote build time is the metric to watch. Section pagination or
@@ -277,7 +313,7 @@ the current installation entry point.
 | Branch | Purpose | Deployment |
 | --- | --- | --- |
 | `main` | Stays close to the original/upstream Moire line | <https://moire.guoyingwei.top> |
-| `development` | Minimal title-list line; content is synchronized from `main` | <https://moires.guoyingwei.top> |
+| `development` | Minimal title-list line; content is synchronized from `main` | <https://moire-development.pages.dev/> + <https://guoyingwei6.github.io/moire/> |
 | `blog` | The macOS Apple Notes folder blog documented here | <https://moireblog.guoyingwei.top> |
 
 The three deployments are isolated and do not overwrite one another. The local
