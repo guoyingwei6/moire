@@ -1,49 +1,69 @@
+# Moire development
 
-<div align="center">
-  <img src="images/icon.svg" width="120" height="auto" alt="Moire Logo">
-  <br/>
-  <br/>
-  <h1>Moire</h1>
-  <p>
-    Sync your thoughts from Apple Notes to GitHub Pages by Shortcuts.
-  </p>
-  <p>
-    <a href="https://moire.blog">Moire</a> &nbsp;&nbsp;|&nbsp;&nbsp; <a href="https://docs.moire.blog">Docs</a> &nbsp;&nbsp;|&nbsp;&nbsp; <a href="https://themes.moire.blog">Themes</a>
-  </p>
-  <br/>
-  <img src="images/moire.png" width="100%" alt="Moire Preview">
-</div>
+这是 `guoyingwei6/moire` 的个人 `development` 分支，基于上游
+[`moirelog/moire`](https://github.com/moirelog/moire) 的 `main`。`main` 保持上游路线，
+本分支集中放置个人 Apple Notes 笔记、轻量首页和实验性主题改动。
 
-<br/>
+## 站点与部署
 
-> ## development 分支（本 fork 定制版）
->
-> 本分支是 `guoyingwei6/moire` 的个人开发分支，基于上游 `moirelog/moire` 的 `main`。
-> 以下特性只存在于 `development`，`main` 始终保持与上游一致（手动同步）。
+- Cloudflare Pages 项目：`moire-development`，生产别名：<https://moire-development.pages.dev/>
+- GitHub Pages：<https://guoyingwei6.github.io/moire/>
+- 预期自定义域名：<https://moire.guoyingwei.top/>
+- 推送 `development` 会触发 GitHub Pages 的 `check → build → deploy`，Cloudflare Pages
+  也会构建同一个分支。
 
-### 站点与品牌
+## 这个分支增加了什么
 
-- 站点域名由 `moire.blog` 改为 `moire.guoyingwei.top`，站点作者更新为 Yingwei Guo
-- `static/robots.txt` 的 Sitemap 指向新站点
-- 默认关闭热力图（`moire.config.ts` 中 `heatmap: false`）
+### 笔记访问体验
 
-### 笔记体验
+- 每条笔记都有稳定地址：`/memo/<slug>/`，可以直接分享和收录。
+- RSS 为每条笔记提供永久链接、完整标题和正文。
+- Sitemap 收录所有公开笔记的永久地址。
+- Classic 首页采用轻量的标题列表；点击标题进入完整笔记页。
+- 当前首页没有接入站内搜索组件，README 不把未接入的功能当成已上线功能。
 
-- **永久笔记页**：每条笔记有独立地址 `/memo/<slug>/`，可直接分享、可被搜索引擎收录
-- **RSS / Sitemap 升级**：RSS 每条笔记带 permalink、完整标题与内容；Sitemap 生成所有笔记的永久链接
-- **首页索引**：Classic 首页保持轻量的标题列表；站内搜索与筛选暂未接入当前首页
-- 首页改为标题列表式备忘录索引，并恢复 classic 主题样式；更新站点署名与仓库链接
+### 首页性能与 Markdown 逻辑
 
-### 主题与构建
+- Classic 首页只发送标题、日期、标签等列表元数据，不发送渲染后的正文 HTML；完整正文只在详情页使用。
+- 标签在 Markdown token 渲染阶段生成，代码块、行内代码、链接和原始 HTML 中的 `#TODO`
+  不会被误转换成标签按钮。
+- 列表分页大小通过响应式配置读取，切换配置后不会继续使用旧的 `pageSize`。
+- 保留六种主题：`classic`、`receipt`、`cyberpunk`、`academic`、`bento`、`pixel`。
+- 默认关闭热力图，并更新站点作者、仓库链接和站点元信息。
 
-- 主题改为构建期动态解析（`virtual:moire-theme` 虚拟模块），支持 receipt / cyberpunk / academic / bento / pixel / classic 六种主题
-- 重构 `Heatmap` 组件；`src/lib/server/memos.ts` 服务端逻辑增强（标题块/标签块清理、标签与月份聚合等）
+### Apple Notes 内容
 
-### 部署与 CI（本分支专属）
+`src/memos/` 保存从 iPhone / Mac 同步来的笔记。同步动作只负责把内容提交到
+`development`；网站构建再负责 Markdown 解析、主题渲染和静态页面生成。
 
-- 推送到 `development` 自动部署：Cloudflare（`moire-development` 项目，主域名 `moire.guoyingwei.top`）+ GitHub Pages（`guoyingwei6.github.io/moire`）
-- `cleanup-images` 与 `memo-archive` 工作流为**仅手动触发**；手动归档固定打包 `development` 分支的 `src/memos` 笔记
+## 本地开发与检查
 
-### 笔记内容
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+pnpm run check
+pnpm run build
+```
 
-- `src/memos/` 下为个人 Apple Notes 同步的笔记（iPhone / Mac mini 自动同步推送至此分支）
+`check` 使用 Svelte/TypeScript 检查，`build` 生成可部署的静态站点。
+
+## 工作流边界
+
+- `cleanup-images` 和 `memo-archive` 只手动触发，并固定操作 `development`。
+- 图片清理脚本使用参数化的 `git rm`，不会把文件名拼进 Shell 命令。
+- `development` 的部署工作流使用锁文件安装依赖，并在构建前执行 `check`。
+- `main` 不会被本分支的笔记同步、清理或归档工作流自动修改。
+
+## 与 blog 分支的区别
+
+| 分支 | 重点 | 发布方式 |
+| --- | --- | --- |
+| `development` | 轻量标题列表、永久 Memo 页面、多主题实验 | GitHub Pages + Cloudflare Pages |
+| `blog` | 完整 Apple Notes 文件夹博客、附件和自动发布 | Cloudflare Pages |
+
+如果需要配置 Apple Notes 自动导出、LaunchAgent、媒体转换或发布快照，请查看
+`blog` 分支的 README 和 `docs/` 文档。
+
+## License
+
+GPL-3.0.
